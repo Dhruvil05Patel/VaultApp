@@ -1,13 +1,15 @@
 import SwiftUI
 
 struct ContentView: View {
-    var body: some View {
-        Text("VaultApp — Setup Complete ✅")
-            .font(.title)
-            .padding()
-    }
-}
+    @EnvironmentObject var vaultManager: VaultManager
 
-#Preview {
-    ContentView()
+    var body: some View {
+        Group {
+            if vaultManager.isUnlocked {
+                Text("Vault open — list view coming in Task 07")
+            } else {
+                Text("Lock screen coming in Task 06")
+            }
+        }
+    }
 }
