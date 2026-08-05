@@ -3,19 +3,20 @@ import SwiftUI
 @main
 struct VaultAppApp: App {
 
-    @StateObject private var vaultManager = VaultManager()
+    private let autoLockService = AutoLockService(vaultManager: VaultManager.shared)
 
     var body: some Scene {
-        // Main window
         WindowGroup {
             ContentView()
-                .environmentObject(vaultManager)
+                .environmentObject(VaultManager.shared)
                 .frame(minWidth: 700, minHeight: 500)
+                .onAppear {
+                    autoLockService.start()
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
 
-        // Settings window — ⌘ + , opens this
         Settings {
             SettingsView()
         }

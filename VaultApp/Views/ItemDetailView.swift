@@ -261,18 +261,8 @@ struct ItemDetailView: View {
     @ViewBuilder
     private func copyButton(value: String, key: String) -> some View {
         Button {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(value, forType: .string)
+            ClipboardService.copy(value)
             withAnimation { copiedField = key }
-            // Auto-clear clipboard after the configured delay
-            let delay = AppSettings.shared.clipboardClearDelay
-            if delay > 0 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + Double(delay)) {
-                    if NSPasteboard.general.string(forType: .string) == value {
-                        NSPasteboard.general.clearContents()
-                    }
-                }
-            }
             // Reset the checkmark icon after 2s
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 withAnimation { copiedField = nil }

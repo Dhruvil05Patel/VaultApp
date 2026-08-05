@@ -188,17 +188,7 @@ struct VaultListView: View {
     // MARK: - Helpers
 
     private func copyToClipboard(_ string: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(string, forType: .string)
-
-        // Auto-clear after the configured delay
-        let delay = AppSettings.shared.clipboardClearDelay
-        guard delay > 0 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(delay)) {
-            if NSPasteboard.general.string(forType: .string) == string {
-                NSPasteboard.general.clearContents()
-            }
-        }
+        ClipboardService.copy(string)
     }
 }
 

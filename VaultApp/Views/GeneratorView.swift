@@ -237,19 +237,10 @@ struct GeneratorView: View {
         HStack(spacing: 12) {
             // Copy button
             Button {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(generatedValue, forType: .string)
+                ClipboardService.copy(generatedValue)
                 withAnimation { copied = true }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                     withAnimation { copied = false }
-                }
-                let delay = AppSettings.shared.clipboardClearDelay
-                if delay > 0 {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + Double(delay)) {
-                        if NSPasteboard.general.string(forType: .string) == generatedValue {
-                            NSPasteboard.general.clearContents()
-                        }
-                    }
                 }
             } label: {
                 Label(
