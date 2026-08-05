@@ -6,6 +6,7 @@ struct VaultAppApp: App {
     @StateObject private var vaultManager = VaultManager()
 
     var body: some Scene {
+        // Main window
         WindowGroup {
             ContentView()
                 .environmentObject(vaultManager)
@@ -13,5 +14,10 @@ struct VaultAppApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+
+        // Settings window — ⌘ + , opens this
+        Settings {
+            SettingsView()
+        }
     }
 }

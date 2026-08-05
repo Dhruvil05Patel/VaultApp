@@ -1,0 +1,35 @@
+import Foundation
+import Combine
+
+final class AppSettings: ObservableObject {
+
+    static let shared = AppSettings()
+
+    // Auto-lock timeout in seconds. 0 = never.
+    @Published var autoLockTimeout: Int {
+        didSet { UserDefaults.standard.set(autoLockTimeout, forKey: "autoLockTimeout") }
+    }
+
+    // How long (seconds) before clipboard is cleared after a copy. 0 = never.
+    @Published var clipboardClearDelay: Int {
+        didSet { UserDefaults.standard.set(clipboardClearDelay, forKey: "clipboardClearDelay") }
+    }
+
+    // Whether to lock the vault when the screen is locked or the Mac sleeps.
+    @Published var lockOnSleep: Bool {
+        didSet { UserDefaults.standard.set(lockOnSleep, forKey: "lockOnSleep") }
+    }
+
+    // Whether to show passwords in the detail view by default (instead of masked).
+    @Published var showPasswordsByDefault: Bool {
+        didSet { UserDefaults.standard.set(showPasswordsByDefault, forKey: "showPasswordsByDefault") }
+    }
+
+    private init() {
+        // Load persisted values, falling back to sensible defaults
+        self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
+        self.clipboardClearDelay  = UserDefaults.standard.object(forKey: "clipboardClearDelay") as? Int ?? 30  // 30s
+        self.lockOnSleep          = UserDefaults.standard.object(forKey: "lockOnSleep") as? Bool ?? true
+        self.showPasswordsByDefault = UserDefaults.standard.object(forKey: "showPasswordsByDefault") as? Bool ?? false
+    }
+}

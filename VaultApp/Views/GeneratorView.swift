@@ -243,9 +243,12 @@ struct GeneratorView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                     withAnimation { copied = false }
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                    if NSPasteboard.general.string(forType: .string) == generatedValue {
-                        NSPasteboard.general.clearContents()
+                let delay = AppSettings.shared.clipboardClearDelay
+                if delay > 0 {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + Double(delay)) {
+                        if NSPasteboard.general.string(forType: .string) == generatedValue {
+                            NSPasteboard.general.clearContents()
+                        }
                     }
                 }
             } label: {

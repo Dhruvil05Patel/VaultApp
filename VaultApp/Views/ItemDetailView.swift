@@ -264,10 +264,13 @@ struct ItemDetailView: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(value, forType: .string)
             withAnimation { copiedField = key }
-            // Auto-clear clipboard after 30s
-            DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
-                if NSPasteboard.general.string(forType: .string) == value {
-                    NSPasteboard.general.clearContents()
+            // Auto-clear clipboard after the configured delay
+            let delay = AppSettings.shared.clipboardClearDelay
+            if delay > 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + Double(delay)) {
+                    if NSPasteboard.general.string(forType: .string) == value {
+                        NSPasteboard.general.clearContents()
+                    }
                 }
             }
             // Reset the checkmark icon after 2s
