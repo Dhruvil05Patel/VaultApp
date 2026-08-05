@@ -1,32 +1,17 @@
-//
-//  VaultAppApp.swift
-//  VaultApp
-//
-//  Created by Dhruvil Patel on 04/08/26.
-//
-
 import SwiftUI
-import SwiftData
 
 @main
 struct VaultAppApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @StateObject private var vaultManager = VaultManager()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(vaultManager)
+                .frame(minWidth: 700, minHeight: 500)
         }
-        .modelContainer(sharedModelContainer)
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
     }
 }
