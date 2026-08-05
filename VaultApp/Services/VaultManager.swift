@@ -6,6 +6,10 @@ import SwiftUI
 @MainActor
 final class VaultManager: ObservableObject {
 
+    // Shared singleton so services (e.g. AutoLockService) can reference it
+    // before SwiftUI instantiates the view.
+    static let shared = VaultManager()
+
     // MARK: - Published State (drives all SwiftUI views)
 
     @Published var isUnlocked: Bool = false
