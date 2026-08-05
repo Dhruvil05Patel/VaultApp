@@ -6,10 +6,13 @@ struct ContentView: View {
     var body: some View {
         Group {
             if vaultManager.isUnlocked {
-                Text("Vault open — list view coming in Task 07")
+                // VaultListView will go here in Task 07
+                Text("✅ Vault is unlocked — list coming in Task 07")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Text("Lock screen coming in Task 06")
+                LockView()
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: vaultManager.isUnlocked)
     }
 }
