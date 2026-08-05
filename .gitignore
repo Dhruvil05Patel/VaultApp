@@ -1,0 +1,41 @@
+# Xcode
+#
+# Reference: https://github.com/github/gitignore/blob/main/Swift.gitignore
+
+# Xcode user state and local settings
+.DS_Store
+*.xcuserstate
+project.xcworkspace/xcuserdata/
+*.xcuserdata
+xcuserdata/
+DerivedData/
+.Archive/
+
+# Swift Package Manager
+#
+# Add build artifacts and dependencies
+.build/
+Packages/
+Package.pins
+Package.resolved
+
+# CocoaPods
+#
+# We recommend against committing the Pods directory to your codebase,
+# but if you prefer to do so, remove the line below.
+Pods/
+Headers/
+
+# Carthage
+#
+# We recommend against committing Carthage/Build to your codebase,
+# but if you prefer to do so, remove the line below.
+Carthage/Build/
+
+# Accidental files / logs
+*.log
+
+# AI Code Assistants config/history
+.claude/
+.gemini/
+.copilot/
