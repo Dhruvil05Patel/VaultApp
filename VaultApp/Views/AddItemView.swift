@@ -61,7 +61,10 @@ struct AddItemView: View {
         .frame(minWidth: 440, minHeight: 520)
         .onAppear(perform: prefillIfEditing)
         .sheet(isPresented: $showGenerator) {
-            GeneratorView()
+            GeneratorView { selectedPassword in
+                password = selectedPassword
+                showPassword = true
+            }
         }
     }
 
