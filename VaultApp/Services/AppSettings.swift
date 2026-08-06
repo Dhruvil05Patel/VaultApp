@@ -25,11 +25,17 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(showPasswordsByDefault, forKey: "showPasswordsByDefault") }
     }
 
+    // Whether Touch ID / biometric unlock is enabled.
+    @Published var isBiometricEnabled: Bool {
+        didSet { UserDefaults.standard.set(isBiometricEnabled, forKey: "isBiometricEnabled") }
+    }
+
     private init() {
         // Load persisted values, falling back to sensible defaults
         self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
         self.clipboardClearDelay  = UserDefaults.standard.object(forKey: "clipboardClearDelay") as? Int ?? 30  // 30s
         self.lockOnSleep          = UserDefaults.standard.object(forKey: "lockOnSleep") as? Bool ?? true
         self.showPasswordsByDefault = UserDefaults.standard.object(forKey: "showPasswordsByDefault") as? Bool ?? false
+        self.isBiometricEnabled   = UserDefaults.standard.object(forKey: "isBiometricEnabled") as? Bool ?? false
     }
 }

@@ -7,6 +7,8 @@ struct ContentView: View {
     // These are triggered by menu bar commands via NotificationCenter
     @State private var showAddItem: Bool = false
     @State private var showGenerator: Bool = false
+    @State private var showEnableBiometricOffer: Bool = false
+    @State private var biometricEnableError: String? = nil
 
     var body: some View {
         ZStack {
@@ -25,6 +27,14 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: vaultManager.isUnlocked)
+        // Offer to enable Touch ID after a password unlock
+        .onChange(of: vaultManager.isUnlocked) { unlocked in
+            if unlocked,
+               BiometricService.isAvailable(),
+               !BiometricService.hasStoredKey() {
+                showEnableBiometricOffer = true
+            }
+        }
         // React to menu bar "New Password Entry" command
         .onReceive(NotificationCenter.default.publisher(for: .addNewItem)) { _ in
             if vaultManager.isUnlocked {
@@ -41,6 +51,24 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showGenerator) {
             GeneratorView()
+        }
+        .alert("Enable \(BiometricService.biometricName())?", isPresented: $showEnableBiometricOffer) {
+            Button("Enable") {
+                Task {
+                    do {
+                        try await vaultManager.enableBiometric()
+                    } catch {
+                        biometricEnableError = error.localizedDescription
+                    }
+                }
+            }
+            Button("Not Now", role: .cancel) {}
+        } message: {
+            if let bioError = biometricEnableError {
+                Text(bioError)
+            } else {
+                Text("Unlock future sessions with \(BiometricService.biometricName()) instead of typing your master password.")
+            }
         }
     }
 }
