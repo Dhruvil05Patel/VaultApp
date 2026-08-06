@@ -171,4 +171,52 @@ final class VaultManager: ObservableObject {
     func clearError() {
         errorMessage = nil
     }
+
+    // MARK: - Biometric Support
+
+    // Expose raw key bytes so BiometricService can store them in Keychain.
+    // Only callable while the vault is unlocked.
+    func rawKeyDataForBiometricStorage() -> Data? {
+        guard let key = symmetricKey else { return nil }
+        return key.withUnsafeBytes { Data($0) }
+    }
+
+    // Unlock the vault using a raw key Data retrieved from Keychain (biometric path).
+    // This bypasses PBKDF2 — the key bytes are used directly.
+    func unlockWithBiometricKey(_ keyData: Data) {
+        isLoading = true
+        errorMessage = nil
+
+        Task {
+            do {
+                let key = SymmetricKey(data: keyData)
+                let encryptedData = try Data(contentsOf: vaultFileURL)
+                let decryptedVault = try EncryptionService.decryptVault(encryptedData, using: key)
+
+                self.symmetricKey = key
+                self.vault = decryptedVault
+                self.isUnlocked = true
+            } catch {
+                self.errorMessage = "Biometric unlock failed. Use your master password."
+            }
+            self.isLoading = false
+        }
+    }
+
+    // Enable Touch ID: store the current in-memory key in Keychain.
+    // Must be called while the vault is unlocked.
+    func enableBiometric() async throws {
+        guard let keyData = rawKeyDataForBiometricStorage() else {
+            throw NSError(domain: "VaultManager", code: 2,
+                          userInfo: [NSLocalizedDescriptionKey: "Vault must be unlocked to enable Touch ID."])
+        }
+        try BiometricService.storeKey(keyData)
+        AppSettings.shared.isBiometricEnabled = true
+    }
+
+    // Disable Touch ID: remove the Keychain item.
+    func disableBiometric() {
+        BiometricService.deleteKey()
+        AppSettings.shared.isBiometricEnabled = false
+    }
 }

@@ -45,6 +45,32 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // MARK: Biometric Section
+            if BiometricService.isAvailable() {
+                Section {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Unlock with \(BiometricService.biometricName())")
+                            Text("Use \(BiometricService.biometricName()) instead of typing your master password each time.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Toggle("", isOn: biometricBinding)
+                            .toggleStyle(.switch)
+                            .labelsHidden()
+                    }
+                } header: {
+                    Text(BiometricService.biometricName())
+                } footer: {
+                    if AppSettings.shared.isBiometricEnabled {
+                        Text("Your vault key is stored in the Keychain, protected by \(BiometricService.biometricName()). Your master password is never stored.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             // MARK: Clipboard Section
             Section {
                 Picker("Clear clipboard after", selection: $settings.clipboardClearDelay) {
@@ -93,9 +119,49 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 440)
         .padding()
+        .alert("Unlock Vault First", isPresented: $showUnlockRequiredAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Unlock the vault with your master password before enabling \(BiometricService.biometricName()).")
+        }
+        .alert("Enable \(BiometricService.biometricName()) Failed", isPresented: Binding(
+            get: { biometricError != nil },
+            set: { if !$0 { biometricError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(biometricError ?? "Unknown error")
+        }
     }
 
     // MARK: - Helpers
+
+    @State private var showUnlockRequiredAlert: Bool = false
+    @State private var biometricError: String? = nil
+
+    private var biometricBinding: Binding<Bool> {
+        Binding(
+            get: { AppSettings.shared.isBiometricEnabled && BiometricService.hasStoredKey() },
+            set: { enabled in
+                if enabled {
+                    // Vault must be unlocked to enable — check first
+                    guard VaultManager.shared.isUnlocked else {
+                        showUnlockRequiredAlert = true
+                        return
+                    }
+                    Task {
+                        do {
+                            try await VaultManager.shared.enableBiometric()
+                        } catch {
+                            biometricError = error.localizedDescription
+                        }
+                    }
+                } else {
+                    VaultManager.shared.disableBiometric()
+                }
+            }
+        )
+    }
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
