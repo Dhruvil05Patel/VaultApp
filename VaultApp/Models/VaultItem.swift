@@ -15,6 +15,18 @@ struct VaultItem: Codable, Identifiable, Hashable {
     var updatedAt: Date    // Updated every time the item is edited
     var category: Category // What type of entry this is
 
+    // MARK: - Breach Status (cached, not authoritative — re-check periodically)
+
+    enum BreachStatus: String, Codable {
+        case unknown      // never checked
+        case safe         // checked and not found
+        case breached     // found in breach database
+    }
+
+    var breachStatus: BreachStatus = .unknown
+    var breachCount: Int = 0           // number of times seen in breaches (0 if safe/unknown)
+    var breachCheckedAt: Date? = nil   // when the last check was performed
+
     // MARK: - Category
 
     enum Category: String, Codable, CaseIterable {
