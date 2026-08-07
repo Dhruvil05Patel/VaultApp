@@ -9,6 +9,8 @@ struct ItemDetailView: View {
     @State private var showEditSheet: Bool = false
     @State private var showDeleteConfirm: Bool = false
     @State private var copiedField: String? = nil   // tracks which field was just copied
+    @State private var isCheckingBreach: Bool = false
+    @State private var breachError: String? = nil
 
     // MARK: - Body
 
@@ -35,6 +37,8 @@ struct ItemDetailView: View {
                     }
 
                     passwordRow
+
+                    breachSection
 
                     if !item.url.isEmpty {
                         fieldRow(
@@ -206,6 +210,57 @@ struct ItemDetailView: View {
         }
     }
 
+    // MARK: - Breach Section
+
+    @ViewBuilder
+    private var breachSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Show cached result if available
+            if item.breachStatus != .unknown {
+                BreachBadge(status: item.breachStatus, count: item.breachCount, style: .full)
+                if let checkedAt = item.breachCheckedAt {
+                    Text("Last checked \(checkedAt.formatted(date: .abbreviated, time: .shortened))")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+
+            // Error
+            if let error = breachError {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .foregroundStyle(.orange)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            // Check button
+            Button {
+                checkBreach()
+            } label: {
+                if isCheckingBreach {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text("Checking…")
+                    }
+                } else {
+                    Label(
+                        item.breachStatus == .unknown ? "Check for Breaches" : "Re-check",
+                        systemImage: "shield.lefthalf.filled"
+                    )
+                }
+            }
+            .buttonStyle(.bordered)
+            .disabled(isCheckingBreach)
+
+            Text("Checks against the HaveIBeenPwned database. Only an anonymous partial hash is sent — your password never leaves this device.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
     // MARK: - Notes Row
 
     @ViewBuilder
@@ -277,6 +332,27 @@ struct ItemDetailView: View {
     }
 
     // MARK: - Helpers
+
+    private func checkBreach() {
+        isCheckingBreach = true
+        breachError = nil
+
+        Task {
+            do {
+                let result = try await BreachCheckService.check(password: item.password)
+
+                // Update the item in the vault with the result
+                var updated = item
+                updated.breachStatus    = result.isBreached ? .breached : .safe
+                updated.breachCount     = result.count
+                updated.breachCheckedAt = Date()
+                vaultManager.updateItem(updated)
+            } catch {
+                breachError = error.localizedDescription
+            }
+            isCheckingBreach = false
+        }
+    }
 
     private var categoryColor: Color {
         switch item.category {

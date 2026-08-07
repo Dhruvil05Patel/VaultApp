@@ -12,6 +12,7 @@ struct VaultListView: View {
     // Sheet presentation state
     @State private var showAddItem: Bool = false
     @State private var showGenerator: Bool = false
+    @State private var showBulkBreachCheck: Bool = false
 
     // MARK: - Filtered Items
 
@@ -39,6 +40,10 @@ struct VaultListView: View {
         }
         .sheet(isPresented: $showGenerator) {
             GeneratorView()  // Built in Task 10
+        }
+        .sheet(isPresented: $showBulkBreachCheck) {
+            BulkBreachCheckView()
+                .environmentObject(vaultManager)
         }
     }
 
@@ -169,6 +174,13 @@ struct VaultListView: View {
         // Right side — add + generator
         ToolbarItemGroup(placement: .primaryAction) {
             Button {
+                showBulkBreachCheck = true
+            } label: {
+                Label("Check All for Breaches", systemImage: "shield.lefthalf.filled")
+            }
+            .help("Check all passwords against the HaveIBeenPwned database")
+
+            Button {
                 showGenerator = true
             } label: {
                 Label("Password Generator", systemImage: "dice.fill")
@@ -211,10 +223,17 @@ struct VaultItemRow: View {
 
             // Title and username
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.title)
-                    .font(.callout)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(item.title)
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+
+                    // Small breach indicator
+                    if item.breachStatus == .breached {
+                        BreachBadge(status: .breached, count: item.breachCount, style: .compact)
+                    }
+                }
                 Text(item.username)
                     .font(.caption)
                     .foregroundStyle(.secondary)
