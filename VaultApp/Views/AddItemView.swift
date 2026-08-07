@@ -18,6 +18,8 @@ struct AddItemView: View {
     @State private var category: VaultItem.Category = .login
     @State private var showPassword: Bool = false
     @State private var showGenerator: Bool = false
+    @State private var totpSecret: String = ""
+    @State private var totpError: String? = nil
 
     // Validation
     private var isFormValid: Bool {
@@ -168,6 +170,43 @@ struct AddItemView: View {
                     strengthBar
                 }
             }
+
+            // Two-Factor Secret
+            formField(label: "Two-Factor Secret (optional)", icon: "shield.lefthalf.filled") {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        TextField("e.g. JBSWY3DPEHPK3PXP", text: $totpSecret)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(.body, design: .monospaced))
+                            .autocorrectionDisabled()
+                            .onChange(of: totpSecret) { newValue in
+                                handleTOTPChange(newValue)
+                            }
+
+                        // Test live preview
+                        if TOTPService.isValidSecret(totpSecret) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(.green)
+                        } else if !totpSecret.isEmpty {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.red)
+                        }
+                    }
+
+                    if let err = totpError {
+                        Text(err)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    } else if !totpSecret.isEmpty && TOTPService.isValidSecret(totpSecret) {
+                        // Show a live preview code while filling in the form
+                        TOTPRowView(secret: totpSecret)
+                    }
+
+                    Text("Paste the secret key from your account's 2FA setup page. Usually shown as text or in a QR code.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
         }
     }
 
@@ -286,6 +325,7 @@ struct AddItemView: View {
         url      = item.url
         notes    = item.notes
         category = item.category
+        totpSecret = item.totpSecret
     }
 
     private func saveItem() {
@@ -302,9 +342,10 @@ struct AddItemView: View {
             updated.url      = url
             updated.notes    = notes
             updated.category = category
+            updated.totpSecret = totpSecret.trimmingCharacters(in: .whitespaces)
             vaultManager.updateItem(updated)
         } else {
-            let newItem = VaultItem(
+            var newItem = VaultItem(
                 title:    trimmedTitle,
                 username: username,
                 password: password,
@@ -312,10 +353,35 @@ struct AddItemView: View {
                 notes:    notes,
                 category: category
             )
+            newItem.totpSecret = totpSecret.trimmingCharacters(in: .whitespaces)
             vaultManager.addItem(newItem)
         }
 
         dismiss()
+    }
+
+    // MARK: - TOTP Helpers
+
+    private func handleTOTPChange(_ newValue: String) {
+        // Detect otpauth:// URI paste
+        if newValue.hasPrefix("otpauth://") {
+            if let parsed = TOTPService.parseOTPAuthURI(newValue) {
+                totpSecret = parsed.secret
+                // Pre-fill title if empty
+                if title.isEmpty { title = parsed.label }
+                if username.isEmpty { username = parsed.issuer }
+            }
+        }
+        validateTOTP()
+    }
+
+    private func validateTOTP() {
+        let clean = totpSecret.trimmingCharacters(in: .whitespaces)
+        guard !clean.isEmpty else {
+            totpError = nil
+            return
+        }
+        totpError = TOTPService.isValidSecret(clean) ? nil : "Invalid secret — must be valid Base32 (A–Z, 2–7)"
     }
 }
 

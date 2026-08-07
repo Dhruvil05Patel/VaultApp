@@ -38,6 +38,10 @@ struct ItemDetailView: View {
 
                     passwordRow
 
+                    if item.hasTOTP {
+                        TOTPRowView(secret: item.totpSecret)
+                    }
+
                     breachSection
 
                     if !item.url.isEmpty {

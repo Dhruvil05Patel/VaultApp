@@ -7,6 +7,7 @@ struct ContentView: View {
     // These are triggered by menu bar commands via NotificationCenter
     @State private var showAddItem: Bool = false
     @State private var showGenerator: Bool = false
+    @State private var showImport: Bool = false
     @State private var showEnableBiometricOffer: Bool = false
     @State private var biometricEnableError: String? = nil
 
@@ -45,12 +46,22 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openGenerator)) { _ in
             showGenerator = true
         }
+        // React to menu bar "Import Passwords…" command
+        .onReceive(NotificationCenter.default.publisher(for: .openImport)) { _ in
+            if vaultManager.isUnlocked {
+                showImport = true
+            }
+        }
         .sheet(isPresented: $showAddItem) {
             AddItemView()
                 .environmentObject(vaultManager)
         }
         .sheet(isPresented: $showGenerator) {
             GeneratorView()
+        }
+        .sheet(isPresented: $showImport) {
+            ImportFlowView()
+                .environmentObject(vaultManager)
         }
         .alert("Enable \(BiometricService.biometricName())?", isPresented: $showEnableBiometricOffer) {
             Button("Enable") {

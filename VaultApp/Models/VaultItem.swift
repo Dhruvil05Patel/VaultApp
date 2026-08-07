@@ -11,6 +11,14 @@ struct VaultItem: Codable, Identifiable, Hashable {
     var password: String   // The stored password
     var url: String        // Website URL — empty string if not applicable
     var notes: String      // Free-form notes — empty string if not applicable
+
+    // Base32-encoded TOTP secret (e.g. "JBSWY3DPEHPK3PXP").
+    // Empty string means no TOTP is configured for this entry.
+    var totpSecret: String = ""
+
+    // Convenience — true when a non-empty TOTP secret is stored
+    var hasTOTP: Bool { !totpSecret.trimmingCharacters(in: .whitespaces).isEmpty }
+
     var createdAt: Date    // Set once at creation, never updated
     var updatedAt: Date    // Updated every time the item is edited
     var category: Category // What type of entry this is

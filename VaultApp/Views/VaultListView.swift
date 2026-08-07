@@ -13,6 +13,7 @@ struct VaultListView: View {
     @State private var showAddItem: Bool = false
     @State private var showGenerator: Bool = false
     @State private var showBulkBreachCheck: Bool = false
+    @State private var showImport: Bool = false
 
     // MARK: - Filtered Items
 
@@ -43,6 +44,10 @@ struct VaultListView: View {
         }
         .sheet(isPresented: $showBulkBreachCheck) {
             BulkBreachCheckView()
+                .environmentObject(vaultManager)
+        }
+        .sheet(isPresented: $showImport) {
+            ImportFlowView()
                 .environmentObject(vaultManager)
         }
     }
@@ -173,6 +178,13 @@ struct VaultListView: View {
 
         // Right side — add + generator
         ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                showImport = true
+            } label: {
+                Label("Import Passwords", systemImage: "square.and.arrow.down")
+            }
+            .help("Import passwords from another app or the Keychain")
+
             Button {
                 showBulkBreachCheck = true
             } label: {
