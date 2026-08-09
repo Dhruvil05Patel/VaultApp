@@ -30,9 +30,10 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.25), value: vaultManager.isUnlocked)
         // Offer to enable Touch ID after a password unlock
         .onChange(of: vaultManager.isUnlocked) { unlocked in
+            print("[CONTENT] onChange isUnlocked = \(unlocked)")
             if unlocked,
                BiometricService.isAvailable(),
-               !BiometricService.hasStoredKey() {
+               !AppSettings.shared.isBiometricEnabled {
                 showEnableBiometricOffer = true
             }
         }

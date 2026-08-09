@@ -167,7 +167,7 @@ struct VaultListView: View {
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         // Left side — lock button
-        ToolbarItem(placement: .navigation) {
+        ToolbarItem(placement: .automatic) {
             Button {
                 vaultManager.lock()
             } label: {

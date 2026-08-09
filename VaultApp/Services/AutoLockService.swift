@@ -63,10 +63,18 @@ final class AutoLockService {
     }
 
     private func lockIfNeeded(reason: String) {
-        guard settings.lockOnSleep else { return }
-        guard vaultManager.isUnlocked else { return }
-        Task { @MainActor in
-            vaultManager.lock()
+        print("[AUTOLOCK] lockIfNeeded CALLED, reason = \(reason)")
+        guard settings.lockOnSleep else { 
+            print("[AUTOLOCK] lockOnSleep disabled, skipping")
+            return 
+        }
+        Task { @MainActor [weak self] in
+            guard let self, self.vaultManager.isUnlocked else { 
+                print("[AUTOLOCK] vault not unlocked, skipping")
+                return 
+            }
+            print("[AUTOLOCK] Calling vaultManager.lock()")
+            self.vaultManager.lock()
         }
     }
 
@@ -94,8 +102,13 @@ final class AutoLockService {
         guard timeout > 0 else { return }  // 0 = never auto-lock
 
         inactivityTimer = Timer.scheduledTimer(withTimeInterval: Double(timeout), repeats: false) { [weak self] _ in
-            guard let self, self.vaultManager.isUnlocked else { return }
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
+                print("[AUTOLOCK] inactivity timer fired")
+                guard let self, self.vaultManager.isUnlocked else { 
+                    print("[AUTOLOCK] inactivity timer: vault not unlocked, skipping")
+                    return 
+                }
+                print("[AUTOLOCK] inactivity timer: Calling vaultManager.lock()")
                 self.vaultManager.lock()
             }
         }
