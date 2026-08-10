@@ -12,6 +12,15 @@ struct VaultItem: Codable, Identifiable, Hashable {
     var url: String        // Website URL — empty string if not applicable
     var notes: String      // Free-form notes — empty string if not applicable
 
+    // Structured credit/debit card fields — only populated when category == .creditCard
+    var cardFields: CardFields? = nil
+
+    // Structured identity fields — only populated when category == .identity
+    var identityFields: IdentityFields? = nil
+
+    // Full-text secure note body — only populated when category == .secureNote
+    var secureNoteBody: String = ""
+
     // Base32-encoded TOTP secret (e.g. "JBSWY3DPEHPK3PXP").
     // Empty string means no TOTP is configured for this entry.
     var totpSecret: String = ""
