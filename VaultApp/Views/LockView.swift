@@ -11,6 +11,7 @@ struct LockView: View {
     @FocusState private var passwordFieldFocused: Bool
     @State private var biometricError: String? = nil
     @State private var allowBiometric: Bool = false  // prevents auto-trigger on launch
+    @State private var hasAutoPrompted: Bool = false
 
     // Computed: are we creating a new vault or unlocking an existing one?
     private var isCreatingVault: Bool {
@@ -204,6 +205,11 @@ struct LockView: View {
             // Enable biometric after brief delay to prevent Xcode/debugger auto-trigger on launch
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 allowBiometric = true
+                
+                if canUseBiometrics && !hasAutoPrompted {
+                    hasAutoPrompted = true
+                    unlockWithBiometrics()
+                }
             }
         }
     }
