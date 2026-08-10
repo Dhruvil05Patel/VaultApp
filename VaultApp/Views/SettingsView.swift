@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
 
     @ObservedObject private var settings = AppSettings.shared
+    @ObservedObject private var syncService = SyncService.shared
 
     // Timeout options (label, value in seconds)
     private let timeoutOptions: [(label: String, seconds: Int)] = [
@@ -25,6 +26,48 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            // MARK: iCloud Sync Section
+            Section {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Sync with iCloud")
+                        Text("Your encrypted vault is synced across your Macs. Apple cannot read it.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $settings.iCloudSyncEnabled)
+                        .toggleStyle(.switch).labelsHidden()
+                        .onChange(of: settings.iCloudSyncEnabled) { _, enabled in
+                            if enabled {
+                                SyncService.shared.start()
+                                Task { await SyncService.shared.uploadVault() }
+                            } else {
+                                SyncService.shared.stop()
+                            }
+                        }
+                }
+
+                // Sync status display
+                if settings.iCloudSyncEnabled {
+                    HStack(spacing: 6) {
+                        Image(systemName: syncService.syncStatus.icon)
+                            .foregroundStyle(.secondary)
+                        Text(syncService.syncStatus.description)
+                            .font(.callout).foregroundStyle(.secondary)
+                        Spacer()
+                        if let date = syncService.lastSyncDate {
+                            Text("Last synced \(date.formatted(.relative(presentation: .named)))")
+                                .font(.caption).foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+            } header: {
+                Text("iCloud Sync")
+            } footer: {
+                Text("Requires iCloud Drive to be enabled in System Settings → Apple ID.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
             // MARK: Security Section
             Section {
                 // Auto-lock timeout picker

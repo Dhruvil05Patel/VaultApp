@@ -10,6 +10,9 @@ final class VaultManager: ObservableObject {
     // before SwiftUI instantiates the view.
     static let shared = VaultManager()
 
+    // Optional sync service that uploads vault.enc to iCloud after every save.
+    var syncService: SyncService? = nil
+
     // MARK: - Authentication State Machine
 
     enum AuthenticationState: Equatable {
@@ -121,6 +124,11 @@ final class VaultManager: ObservableObject {
                 self.vault = decryptedVault
                 self.authenticationState = .unlocked
                 print("[UNLOCK] authenticationState -> unlocked")
+
+                // Pull any newer vault synced from another Mac
+                Task {
+                    await self.syncService?.downloadAndMerge()
+                }
             } catch {
                 // Show a generic error — don't reveal whether the file or the password is wrong
                 self.errorMessage = "Incorrect password or corrupted vault."
@@ -156,6 +164,23 @@ final class VaultManager: ObservableObject {
         }
         let encryptedData = try EncryptionService.encryptVault(vault, using: key)
         try encryptedData.write(to: vaultFileURL)
+
+        // Upload to iCloud after local save
+        Task {
+            await syncService?.uploadVault()
+        }
+    }
+
+    // MARK: - Reload from Disk
+
+    // Re-decrypts the vault file using the key already in memory (no re-auth).
+    // Called by SyncService after a remote iCloud change downloads a newer vault.
+    func reloadFromDisk() async {
+        guard let key = symmetricKey else { return }
+        guard let encryptedData = try? Data(contentsOf: vaultFileURL) else { return }
+        if let updated = try? EncryptionService.decryptVault(encryptedData, using: key) {
+            vault = updated
+        }
     }
 
     // MARK: - CRUD Operations
@@ -219,6 +244,11 @@ final class VaultManager: ObservableObject {
                 self.vault = decryptedVault
                 self.authenticationState = .unlocked
                 print("[UNLOCK_BIOMETRIC] authenticationState -> unlocked")
+
+                // Pull any newer vault synced from another Mac
+                Task {
+                    await self.syncService?.downloadAndMerge()
+                }
             } catch {
                 self.errorMessage = "Biometric unlock failed. Use your master password."
                 print("[UNLOCK_BIOMETRIC] ERROR: \(error)")
@@ -263,6 +293,11 @@ final class VaultManager: ObservableObject {
             self.vault = decryptedVault
             self.authenticationState = .unlocked
             print("[AUTH] SUCCESS: authenticationState -> unlocked")
+
+            // Pull any newer vault synced from another Mac
+            Task {
+                await self.syncService?.downloadAndMerge()
+            }
         } catch {
             // On any failure (cancel, error, lockout), return to locked state
             self.authenticationState = .locked
@@ -347,6 +382,11 @@ final class VaultManager: ObservableObject {
             try saltData.write(to: saltFileURL)
             try EncryptionService.encryptVault(restoredVault, using: key)
                 .write(to: vaultFileURL)
+
+            // Propagate the restored vault to iCloud
+            Task {
+                await syncService?.uploadVault()
+            }
         }
     }
 }

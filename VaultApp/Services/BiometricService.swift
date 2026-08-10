@@ -112,13 +112,15 @@ enum BiometricService {
     static func retrieveKey(reason: String = "Unlock VaultApp") async throws -> Data {
         print("[BIOMETRIC] retrieveKey() CALLED, reason = \(reason)")
         // The reason string appears in the Touch ID dialog
+        let context = LAContext()
+        context.localizedReason = reason
         let query: [String: Any] = [
             kSecClass as String:             kSecClassGenericPassword,
             kSecAttrService as String:       keychainService,
             kSecAttrAccount as String:       keychainAccount,
             kSecReturnData as String:        true,
             kSecMatchLimit as String:        kSecMatchLimitOne,
-            kSecUseOperationPrompt as String: reason,
+            kSecUseAuthenticationContext as String: context,
         ]
 
         var result: AnyObject?

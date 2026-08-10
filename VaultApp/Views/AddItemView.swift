@@ -235,7 +235,7 @@ struct AddItemView: View {
                             .textFieldStyle(.roundedBorder)
                             .font(.system(.body, design: .monospaced))
                             .autocorrectionDisabled()
-                            .onChange(of: totpSecret) { newValue in
+                            .onChange(of: totpSecret) { _, newValue in
                                 handleTOTPChange(newValue)
                             }
 

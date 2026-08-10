@@ -30,6 +30,11 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(isBiometricEnabled, forKey: "isBiometricEnabled") }
     }
 
+    // Whether to sync the encrypted vault to iCloud Drive. Disabled by default.
+    @Published var iCloudSyncEnabled: Bool {
+        didSet { UserDefaults.standard.set(iCloudSyncEnabled, forKey: "iCloudSyncEnabled") }
+    }
+
     private init() {
         // Load persisted values, falling back to sensible defaults
         self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
@@ -37,5 +42,6 @@ final class AppSettings: ObservableObject {
         self.lockOnSleep          = UserDefaults.standard.object(forKey: "lockOnSleep") as? Bool ?? true
         self.showPasswordsByDefault = UserDefaults.standard.object(forKey: "showPasswordsByDefault") as? Bool ?? false
         self.isBiometricEnabled   = UserDefaults.standard.object(forKey: "isBiometricEnabled") as? Bool ?? false
+        self.iCloudSyncEnabled    = UserDefaults.standard.object(forKey: "iCloudSyncEnabled") as? Bool ?? false
     }
 }

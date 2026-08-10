@@ -13,6 +13,10 @@ struct VaultAppApp: App {
                 .frame(minWidth: 720, minHeight: 520)
                 .onAppear {
                     autoLockService.start()
+                    VaultManager.shared.syncService = SyncService.shared
+                    if AppSettings.shared.iCloudSyncEnabled {
+                        SyncService.shared.start()
+                    }
                 }
         }
         .windowStyle(.titleBar)
