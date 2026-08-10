@@ -277,4 +277,76 @@ final class VaultManager: ObservableObject {
         BiometricService.deleteKey()
         AppSettings.shared.isBiometricEnabled = false
     }
+
+    // MARK: - Export
+
+    // Read the stored salt from disk — needed for encrypted backup export
+    func loadSaltForExport() -> Data? {
+        try? Data(contentsOf: saltFileURL)
+    }
+
+    // Export the vault in the requested format. Throws if the vault is locked.
+    func exportEncryptedBackup() throws -> Data {
+        guard isUnlocked, let key = symmetricKey else {
+            throw ExportService.ExportError.vaultLocked
+        }
+        guard let salt = loadSaltForExport() else {
+            throw ExportService.ExportError.noKeyAvailable
+        }
+        return try ExportService.exportEncryptedBackup(vault: vault, key: key, saltData: salt)
+    }
+
+    func exportCSV() throws -> Data {
+        guard isUnlocked else { throw ExportService.ExportError.vaultLocked }
+        return try ExportService.exportCSV(vault: vault)
+    }
+
+    func exportJSON() throws -> Data {
+        guard isUnlocked else { throw ExportService.ExportError.vaultLocked }
+        return try ExportService.exportJSON(vault: vault)
+    }
+
+    // MARK: - Restore from Backup
+
+    // Restores a vault from a .vaultbackup file using the given master password.
+    // With merge=false the vault is replaced; with merge=true items whose UUID is
+    // not already present are added to the current vault.
+    func restoreFromBackup(data: Data, masterPassword: String, merge: Bool = false) async throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let envelope = try decoder.decode(ExportService.BackupEnvelope.self, from: data)
+
+        guard envelope.version == 1 else {
+            throw NSError(domain: "VaultManager", code: 10,
+                          userInfo: [NSLocalizedDescriptionKey: "Unsupported backup version \(envelope.version)."])
+        }
+
+        guard let saltData = Data(base64Encoded: envelope.salt),
+              let encryptedData = Data(base64Encoded: envelope.encryptedVault) else {
+            throw NSError(domain: "VaultManager", code: 11,
+                          userInfo: [NSLocalizedDescriptionKey: "Backup file is corrupted."])
+        }
+
+        let key = try EncryptionService.deriveKey(from: masterPassword, salt: saltData)
+        let restoredVault = try EncryptionService.decryptVault(encryptedData, using: key)
+
+        if merge, isUnlocked {
+            // Merge: add only items whose UUID doesn't already exist in the current vault
+            let existingIDs = Set(vault.items.map { $0.id })
+            let newItems = restoredVault.items.filter { !existingIDs.contains($0.id) }
+            for item in newItems { vault.add(item) }
+            try saveVault()
+        } else {
+            // Replace: overwrite with the backup
+            self.symmetricKey = key
+            self.vault = restoredVault
+            self.authenticationState = .unlocked
+            // Write the restored salt + vault to disk
+            try ensureAppDirectoryExists()
+            try saltData.write(to: saltFileURL)
+            try EncryptionService.encryptVault(restoredVault, using: key)
+                .write(to: vaultFileURL)
+        }
+    }
 }

@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var showAddItem: Bool = false
     @State private var showGenerator: Bool = false
     @State private var showImport: Bool = false
+    @State private var showExport: Bool = false
     @State private var showEnableBiometricOffer: Bool = false
     @State private var biometricEnableError: String? = nil
 
@@ -53,6 +54,12 @@ struct ContentView: View {
                 showImport = true
             }
         }
+        // React to menu bar "Export / Backup Vault…" command
+        .onReceive(NotificationCenter.default.publisher(for: .openExport)) { _ in
+            if vaultManager.isUnlocked {
+                showExport = true
+            }
+        }
         .sheet(isPresented: $showAddItem) {
             AddItemView()
                 .environmentObject(vaultManager)
@@ -62,6 +69,10 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showImport) {
             ImportFlowView()
+                .environmentObject(vaultManager)
+        }
+        .sheet(isPresented: $showExport) {
+            ExportView()
                 .environmentObject(vaultManager)
         }
         .alert("Enable \(BiometricService.biometricName())?", isPresented: $showEnableBiometricOffer) {

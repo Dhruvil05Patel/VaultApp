@@ -14,6 +14,7 @@ struct VaultListView: View {
     @State private var showGenerator: Bool = false
     @State private var showBulkBreachCheck: Bool = false
     @State private var showImport: Bool = false
+    @State private var showExport: Bool = false
 
     // MARK: - Filtered Items
 
@@ -48,6 +49,10 @@ struct VaultListView: View {
         }
         .sheet(isPresented: $showImport) {
             ImportFlowView()
+                .environmentObject(vaultManager)
+        }
+        .sheet(isPresented: $showExport) {
+            ExportView()
                 .environmentObject(vaultManager)
         }
     }
@@ -178,6 +183,13 @@ struct VaultListView: View {
 
         // Right side — add + generator
         ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                showExport = true
+            } label: {
+                Label("Export", systemImage: "square.and.arrow.up")
+            }
+            .help("Export or backup vault")
+
             Button {
                 showImport = true
             } label: {
