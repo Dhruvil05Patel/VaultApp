@@ -31,6 +31,11 @@ struct VaultCommands: Commands {
             }
             .keyboardShortcut("i", modifiers: [.command, .shift])
 
+            Button("Export / Backup Vault…") {
+                NotificationCenter.default.post(name: .openExport, object: nil)
+            }
+            .keyboardShortcut("e", modifiers: [.command, .shift])
+
             Divider()
 
             Button("Lock and Quit") {
@@ -48,4 +53,5 @@ extension Notification.Name {
     static let addNewItem    = Notification.Name("VaultApp.addNewItem")
     static let openGenerator = Notification.Name("VaultApp.openGenerator")
     static let openImport    = Notification.Name("VaultApp.openImport")
+    static let openExport    = Notification.Name("VaultApp.openExport")
 }
