@@ -110,6 +110,7 @@ enum BiometricService {
     // would cause a second prompt when SecItemCopyMatching re-evaluates the
     // access-control item.
     static func retrieveKey(reason: String = "Unlock VaultApp") async throws -> Data {
+        print("[BIOMETRIC] retrieveKey() CALLED, reason = \(reason)")
         // The reason string appears in the Touch ID dialog
         let query: [String: Any] = [
             kSecClass as String:             kSecClassGenericPassword,
@@ -122,6 +123,8 @@ enum BiometricService {
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
+
+        print("[BIOMETRIC] SecItemCopyMatching returned status = \(status)")
 
         guard status == errSecSuccess else {
             if status == errSecItemNotFound {
@@ -162,10 +165,12 @@ enum BiometricService {
             kSecAttrAccount as String: keychainAccount,
             kSecMatchLimit as String:  kSecMatchLimitOne,
             kSecReturnAttributes as String: true,
-            // Do NOT include kSecReturnData — we're only checking existence
+            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip
         ]
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        return status == errSecSuccess
+        
+        // When skipping UI on an item that requires biometrics, it may return errSecInteractionNotAllowed or errSecAuthFailed
+        return status == errSecSuccess || status == errSecInteractionNotAllowed || status == errSecAuthFailed
     }
 }

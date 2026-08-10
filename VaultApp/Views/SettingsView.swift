@@ -141,7 +141,7 @@ struct SettingsView: View {
 
     private var biometricBinding: Binding<Bool> {
         Binding(
-            get: { AppSettings.shared.isBiometricEnabled && BiometricService.hasStoredKey() },
+            get: { AppSettings.shared.isBiometricEnabled },
             set: { enabled in
                 if enabled {
                     // Vault must be unlocked to enable — check first

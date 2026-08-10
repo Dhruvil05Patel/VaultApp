@@ -10,12 +10,25 @@ final class VaultManager: ObservableObject {
     // before SwiftUI instantiates the view.
     static let shared = VaultManager()
 
+    // MARK: - Authentication State Machine
+
+    enum AuthenticationState: Equatable {
+        case locked
+        case authenticating
+        case unlocked
+    }
+
     // MARK: - Published State (drives all SwiftUI views)
 
-    @Published var isUnlocked: Bool = false
+    @Published var authenticationState: AuthenticationState = .locked
     @Published var vault: Vault = Vault()
     @Published var errorMessage: String? = nil
     @Published var isLoading: Bool = false
+
+    // Backward compatibility - derive from authenticationState
+    var isUnlocked: Bool {
+        authenticationState == .unlocked
+    }
 
     // MARK: - Private State
 
@@ -80,7 +93,7 @@ final class VaultManager: ObservableObject {
 
                 self.symmetricKey = key
                 self.vault = emptyVault
-                self.isUnlocked = true
+                self.authenticationState = .unlocked
             } catch {
                 self.errorMessage = error.localizedDescription
             }
@@ -93,6 +106,7 @@ final class VaultManager: ObservableObject {
     // Called when the user enters their master password on the lock screen.
     // Derives the key from the password + stored salt, then decrypts the vault file.
     func unlock(masterPassword: String) {
+        print("[UNLOCK] unlock(password) CALLED, authenticationState = \(authenticationState)")
         isLoading = true
         errorMessage = nil
 
@@ -105,10 +119,12 @@ final class VaultManager: ObservableObject {
 
                 self.symmetricKey = key
                 self.vault = decryptedVault
-                self.isUnlocked = true
+                self.authenticationState = .unlocked
+                print("[UNLOCK] authenticationState -> unlocked")
             } catch {
                 // Show a generic error — don't reveal whether the file or the password is wrong
                 self.errorMessage = "Incorrect password or corrupted vault."
+                print("[UNLOCK] ERROR: \(error)")
             }
             self.isLoading = false
         }
@@ -117,11 +133,16 @@ final class VaultManager: ObservableObject {
     // MARK: - Lock Vault
 
     // Clears the key and vault from memory. The encrypted file on disk is untouched.
+    // NEVER invokes biometric authentication - locking must be immediate and silent.
     func lock() {
+        print("[LOCK] lock() CALLED")
+        print(Thread.callStackSymbols.joined(separator: "\n"))
+        print("[LOCK] authenticationState BEFORE = \(authenticationState)")
         symmetricKey = nil
         vault = Vault()
-        isUnlocked = false
+        authenticationState = .locked
         errorMessage = nil
+        print("[LOCK] authenticationState AFTER = \(authenticationState)")
     }
 
     // MARK: - Save Vault to Disk
@@ -184,6 +205,7 @@ final class VaultManager: ObservableObject {
     // Unlock the vault using a raw key Data retrieved from Keychain (biometric path).
     // This bypasses PBKDF2 — the key bytes are used directly.
     func unlockWithBiometricKey(_ keyData: Data) {
+        print("[UNLOCK_BIOMETRIC] unlockWithBiometricKey() CALLED, authenticationState = \(authenticationState)")
         isLoading = true
         errorMessage = nil
 
@@ -195,9 +217,11 @@ final class VaultManager: ObservableObject {
 
                 self.symmetricKey = key
                 self.vault = decryptedVault
-                self.isUnlocked = true
+                self.authenticationState = .unlocked
+                print("[UNLOCK_BIOMETRIC] authenticationState -> unlocked")
             } catch {
                 self.errorMessage = "Biometric unlock failed. Use your master password."
+                print("[UNLOCK_BIOMETRIC] ERROR: \(error)")
             }
             self.isLoading = false
         }
@@ -212,6 +236,40 @@ final class VaultManager: ObservableObject {
         }
         try BiometricService.storeKey(keyData)
         AppSettings.shared.isBiometricEnabled = true
+    }
+
+    // Single entry point for biometric authentication.
+    // Only allowed when state is .locked. Transitions to .authenticating during the attempt.
+    func authenticateWithBiometrics() async {
+        print("[AUTH] authenticateWithBiometrics() CALLED, authenticationState = \(authenticationState)")
+        // Guard: only allow authentication when locked, prevent multiple simultaneous attempts
+        guard authenticationState == .locked else {
+            print("[AUTH] GUARD: authenticationState != .locked, returning early")
+            return
+        }
+        
+        print("[AUTH] Setting authenticationState = .authenticating")
+        authenticationState = .authenticating
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            let keyData = try await BiometricService.retrieveKey(reason: "Unlock VaultApp")
+            let key = SymmetricKey(data: keyData)
+            let encryptedData = try Data(contentsOf: vaultFileURL)
+            let decryptedVault = try EncryptionService.decryptVault(encryptedData, using: key)
+
+            self.symmetricKey = key
+            self.vault = decryptedVault
+            self.authenticationState = .unlocked
+            print("[AUTH] SUCCESS: authenticationState -> unlocked")
+        } catch {
+            // On any failure (cancel, error, lockout), return to locked state
+            self.authenticationState = .locked
+            self.errorMessage = error.localizedDescription
+            print("[AUTH] FAILURE: authenticationState -> locked, error = \(error)")
+        }
+        self.isLoading = false
     }
 
     // Disable Touch ID: remove the Keychain item.
