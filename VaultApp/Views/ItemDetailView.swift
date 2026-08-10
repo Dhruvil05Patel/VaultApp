@@ -26,33 +26,53 @@ struct ItemDetailView: View {
 
                 // Fields
                 VStack(alignment: .leading, spacing: 20) {
-                    if !item.username.isEmpty {
-                        fieldRow(
-                            label: "Username",
-                            value: item.username,
-                            icon: "person.fill",
-                            copyKey: "username",
-                            isSecret: false
-                        )
-                    }
+                    if item.category == .login {
+                        if !item.username.isEmpty {
+                            fieldRow(
+                                label: "Username",
+                                value: item.username,
+                                icon: "person.fill",
+                                copyKey: "username",
+                                isSecret: false
+                            )
+                        }
 
-                    passwordRow
+                        passwordRow
 
-                    if item.hasTOTP {
-                        TOTPRowView(secret: item.totpSecret)
-                    }
+                        if item.hasTOTP {
+                            TOTPRowView(secret: item.totpSecret)
+                        }
 
-                    breachSection
+                        breachSection
 
-                    if !item.url.isEmpty {
-                        fieldRow(
-                            label: "Website",
-                            value: item.url,
-                            icon: "globe",
-                            copyKey: "url",
-                            isSecret: false,
-                            isURL: true
-                        )
+                        if !item.url.isEmpty {
+                            fieldRow(
+                                label: "Website",
+                                value: item.url,
+                                icon: "globe",
+                                copyKey: "url",
+                                isSecret: false,
+                                isURL: true
+                            )
+                        }
+                    } else if item.category == .creditCard {
+                        if let card = item.cardFields {
+                            CardDetailSection(card: card)
+                        } else {
+                            Text("No card data saved.")
+                                .foregroundStyle(.secondary)
+                                .italic()
+                        }
+                    } else if item.category == .secureNote {
+                        SecureNoteDetailSection(noteBody: item.secureNoteBody)
+                    } else if item.category == .identity {
+                        if let identity = item.identityFields {
+                            IdentityDetailSection(identity: identity)
+                        } else {
+                            Text("No identity data saved.")
+                                .foregroundStyle(.secondary)
+                                .italic()
+                        }
                     }
 
                     if !item.notes.isEmpty {

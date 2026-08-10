@@ -12,6 +12,11 @@ struct BulkBreachCheckView: View {
     @State private var error: String? = nil
     @State private var isDone: Bool = false
 
+    // Only login items have passwords worth checking — skip cards, notes, identity.
+    private var checkableItems: [VaultItem] {
+        vaultManager.vault.items.filter { $0.category == .login }
+    }
+
     private var breachedItems: [VaultItem] {
         vaultManager.vault.items.filter { results[$0.id]?.isBreached == true }
     }
@@ -67,7 +72,7 @@ struct BulkBreachCheckView: View {
                 .font(.system(size: 52))
                 .foregroundStyle(.blue)
 
-            Text("Check \(vaultManager.vault.items.count) passwords")
+            Text("Check \(checkableItems.count) passwords")
                 .font(.title3)
                 .fontWeight(.semibold)
 
@@ -184,7 +189,7 @@ struct BulkBreachCheckView: View {
     // MARK: - Logic
 
     private var estimatedTime: String {
-        let seconds = vaultManager.vault.items.count * 2
+        let seconds = checkableItems.count * 2
         if seconds < 60 { return "\(seconds) seconds" }
         return "\(seconds / 60) minutes"
     }
@@ -192,14 +197,15 @@ struct BulkBreachCheckView: View {
     private func runBulkCheck() {
         isRunning = true
         error = nil
-        total = vaultManager.vault.items.count
+        let items = checkableItems
+        total = items.count
         progress = 0
         results = [:]
 
         Task {
             do {
                 let checkResults = try await BreachCheckService.checkAll(
-                    items: vaultManager.vault.items,
+                    items: items,
                     progress: { completed, total in
                         Task { @MainActor in
                             self.progress = completed
@@ -211,7 +217,7 @@ struct BulkBreachCheckView: View {
                 await MainActor.run {
                     self.results = checkResults
                     // Update breach status on all vault items
-                    for item in vaultManager.vault.items {
+                    for item in items {
                         if let result = checkResults[item.id] {
                             var updated = item
                             updated.breachStatus    = result.isBreached ? .breached : .safe

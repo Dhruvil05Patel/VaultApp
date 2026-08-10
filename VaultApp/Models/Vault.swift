@@ -35,13 +35,19 @@ struct Vault: Codable {
         items.removeAll { $0.id == id }
     }
     
-    // Search items by title or username
+    // Search items by title or any searchable field
     func search(query: String) -> [VaultItem] {
         guard !query.isEmpty else { return items }
         return items.filter {
             $0.title.localizedCaseInsensitiveContains(query) ||
             $0.username.localizedCaseInsensitiveContains(query) ||
-            $0.url.localizedCaseInsensitiveContains(query)
+            $0.url.localizedCaseInsensitiveContains(query) ||
+            ($0.cardFields?.cardNumber.localizedCaseInsensitiveContains(query) ?? false) ||
+            ($0.cardFields?.cardholderName.localizedCaseInsensitiveContains(query) ?? false) ||
+            ($0.cardFields?.bankName.localizedCaseInsensitiveContains(query) ?? false) ||
+            ($0.identityFields?.fullName.localizedCaseInsensitiveContains(query) ?? false) ||
+            ($0.identityFields?.email.localizedCaseInsensitiveContains(query) ?? false) ||
+            $0.secureNoteBody.localizedCaseInsensitiveContains(query)
         }
     }
     

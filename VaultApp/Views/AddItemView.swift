@@ -20,11 +20,22 @@ struct AddItemView: View {
     @State private var showGenerator: Bool = false
     @State private var totpSecret: String = ""
     @State private var totpError: String? = nil
+    @State private var cardFields: CardFields = CardFields()
+    @State private var identityFields: IdentityFields = IdentityFields()
+    @State private var secureNoteBody: String = ""
 
     // Validation
     private var isFormValid: Bool {
-        !title.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !password.isEmpty
+        switch category {
+        case .login:
+            return !title.trimmingCharacters(in: .whitespaces).isEmpty && !password.isEmpty
+        case .creditCard:
+            return !title.trimmingCharacters(in: .whitespaces).isEmpty && !cardFields.cardNumber.isEmpty
+        case .secureNote:
+            return !title.trimmingCharacters(in: .whitespaces).isEmpty && !secureNoteBody.isEmpty
+        case .identity:
+            return !title.trimmingCharacters(in: .whitespaces).isEmpty && !identityFields.firstName.isEmpty
+        }
     }
 
     private var isEditing: Bool {
@@ -46,11 +57,8 @@ struct AddItemView: View {
                     // Category picker
                     categorySection
 
-                    // Core fields
-                    coreFieldsSection
-
-                    // Optional fields
-                    optionalFieldsSection
+                    // Category-specific fields
+                    categorySpecificForm
                 }
                 .padding(24)
             }
@@ -75,7 +83,7 @@ struct AddItemView: View {
     @ViewBuilder
     private var sheetHeader: some View {
         HStack {
-            Text(isEditing ? "Edit Password" : "Add Password")
+            Text(isEditing ? "Edit Item" : "Add Item")
                 .font(.headline)
             Spacer()
         }
@@ -99,6 +107,54 @@ struct AddItemView: View {
                 }
             }
             .pickerStyle(.segmented)
+        }
+    }
+
+    // MARK: - Category-Specific Form Router
+
+    @ViewBuilder
+    private var categorySpecificForm: some View {
+        switch category {
+        case .login:
+            coreFieldsSection       // existing login fields (title, username, password, TOTP)
+            optionalFieldsSection   // existing URL + notes
+        case .creditCard:
+            titleSection
+            CardFormSection(fields: $cardFields)
+            optionalFieldsSection   // notes still apply
+        case .secureNote:
+            titleSection
+            secureNoteEditor
+        case .identity:
+            titleSection
+            IdentityFormSection(fields: $identityFields)
+        }
+    }
+
+    // MARK: - Title Section (non-login categories)
+
+    @ViewBuilder
+    private var titleSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            formField(label: "Title", icon: "textformat") {
+                TextField("e.g. Chase Sapphire, My Profile", text: $title)
+                    .textFieldStyle(.roundedBorder)
+            }
+        }
+    }
+
+    // MARK: - Secure Note Editor
+
+    @ViewBuilder
+    private var secureNoteEditor: some View {
+        formField(label: "Note", icon: "note.text") {
+            TextEditor(text: $secureNoteBody)
+                .frame(minHeight: 200)
+                .padding(6)
+                .background(Color(NSColor.controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color(NSColor.separatorColor), lineWidth: 1))
         }
     }
 
@@ -287,7 +343,7 @@ struct AddItemView: View {
 
             Spacer()
 
-            Button(isEditing ? "Save Changes" : "Add Password") {
+            Button(isEditing ? "Save Changes" : "Add Item") {
                 saveItem()
             }
             .buttonStyle(.borderedProminent)
@@ -326,6 +382,9 @@ struct AddItemView: View {
         notes    = item.notes
         category = item.category
         totpSecret = item.totpSecret
+        cardFields     = item.cardFields ?? CardFields()
+        identityFields = item.identityFields ?? IdentityFields()
+        secureNoteBody = item.secureNoteBody
     }
 
     private func saveItem() {
@@ -343,6 +402,9 @@ struct AddItemView: View {
             updated.notes    = notes
             updated.category = category
             updated.totpSecret = totpSecret.trimmingCharacters(in: .whitespaces)
+            updated.cardFields     = category == .creditCard ? cardFields : nil
+            updated.identityFields = category == .identity   ? identityFields : nil
+            updated.secureNoteBody = category == .secureNote ? secureNoteBody : ""
             vaultManager.updateItem(updated)
         } else {
             var newItem = VaultItem(
@@ -354,6 +416,9 @@ struct AddItemView: View {
                 category: category
             )
             newItem.totpSecret = totpSecret.trimmingCharacters(in: .whitespaces)
+            newItem.cardFields     = category == .creditCard ? cardFields : nil
+            newItem.identityFields = category == .identity   ? identityFields : nil
+            newItem.secureNoteBody = category == .secureNote ? secureNoteBody : ""
             vaultManager.addItem(newItem)
         }
 

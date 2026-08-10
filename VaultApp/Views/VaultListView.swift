@@ -74,11 +74,35 @@ struct VaultListView: View {
                         VaultItemRow(item: item)
                             .tag(item.id)
                             .contextMenu {
-                                Button("Copy Password") {
-                                    copyToClipboard(item.password)
-                                }
-                                Button("Copy Username") {
-                                    copyToClipboard(item.username)
+                                switch item.category {
+                                case .login:
+                                    Button("Copy Password") {
+                                        copyToClipboard(item.password)
+                                    }
+                                    Button("Copy Username") {
+                                        copyToClipboard(item.username)
+                                    }
+                                case .creditCard:
+                                    if let card = item.cardFields {
+                                        Button("Copy Card Number") {
+                                            copyToClipboard(card.cardNumber)
+                                        }
+                                        Button("Copy CVV") {
+                                            copyToClipboard(card.cvv)
+                                        }
+                                    }
+                                case .identity:
+                                    if let identity = item.identityFields, !identity.fullName.isEmpty {
+                                        Button("Copy Full Name") {
+                                            copyToClipboard(identity.fullName)
+                                        }
+                                    }
+                                case .secureNote:
+                                    if !item.secureNoteBody.isEmpty {
+                                        Button("Copy Note") {
+                                            copyToClipboard(item.secureNoteBody)
+                                        }
+                                    }
                                 }
                                 Divider()
                                 Button("Delete", role: .destructive) {
@@ -91,7 +115,7 @@ struct VaultListView: View {
                     }
                 }
             } header: {
-                Text("Passwords (\(filteredItems.count))")
+                Text("Items (\(filteredItems.count))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -258,7 +282,7 @@ struct VaultItemRow: View {
                         BreachBadge(status: .breached, count: item.breachCount, style: .compact)
                     }
                 }
-                Text(item.username)
+                Text(subtitleText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -267,6 +291,19 @@ struct VaultItemRow: View {
             Spacer()
         }
         .padding(.vertical, 2)
+    }
+
+    private var subtitleText: String {
+        switch item.category {
+        case .login:
+            return item.username.isEmpty ? item.url : item.username
+        case .creditCard:
+            return item.cardFields?.maskedNumber ?? ""
+        case .secureNote:
+            return item.secureNoteBody.isEmpty ? "Secure note" : item.secureNoteBody
+        case .identity:
+            return item.identityFields?.fullName ?? ""
+        }
     }
 
     private var iconBackground: Color {
