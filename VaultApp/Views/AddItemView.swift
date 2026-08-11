@@ -24,6 +24,10 @@ struct AddItemView: View {
     @State private var identityFields: IdentityFields = IdentityFields()
     @State private var secureNoteBody: String = ""
 
+    // Folder + tags
+    @State private var folderID: UUID? = nil
+    @State private var tags: [String] = []
+
     // Validation
     private var isFormValid: Bool {
         switch category {
@@ -315,6 +319,26 @@ struct AddItemView: View {
                     .textContentType(.URL)
             }
 
+            // Folder picker
+            formField(label: "Folder (optional)", icon: "folder.fill") {
+                Picker("Folder", selection: $folderID) {
+                    Text("No Folder").tag(UUID?.none)
+                    ForEach(vaultManager.vault.folders.sorted(by: { $0.name < $1.name })) { folder in
+                        Label(folder.name, systemImage: "folder.fill")
+                            .foregroundStyle(folder.color)
+                            .tag(Optional(folder.id))
+                    }
+                }.pickerStyle(.menu)
+            }
+
+            // Tags
+            formField(label: "Tags (optional)", icon: "tag.fill") {
+                TagInputView(
+                    tags: $tags,
+                    allVaultTags: vaultManager.vault.allTags
+                )
+            }
+
             // Notes
             formField(label: "Notes (optional)", icon: "note.text") {
                 TextEditor(text: $notes)
@@ -385,6 +409,8 @@ struct AddItemView: View {
         cardFields     = item.cardFields ?? CardFields()
         identityFields = item.identityFields ?? IdentityFields()
         secureNoteBody = item.secureNoteBody
+        folderID = item.folderID
+        tags     = item.tags
     }
 
     private func saveItem() {
@@ -405,6 +431,8 @@ struct AddItemView: View {
             updated.cardFields     = category == .creditCard ? cardFields : nil
             updated.identityFields = category == .identity   ? identityFields : nil
             updated.secureNoteBody = category == .secureNote ? secureNoteBody : ""
+            updated.folderID = folderID
+            updated.tags     = tags
             vaultManager.updateItem(updated)
         } else {
             var newItem = VaultItem(
@@ -419,6 +447,8 @@ struct AddItemView: View {
             newItem.cardFields     = category == .creditCard ? cardFields : nil
             newItem.identityFields = category == .identity   ? identityFields : nil
             newItem.secureNoteBody = category == .secureNote ? secureNoteBody : ""
+            newItem.folderID = folderID
+            newItem.tags     = tags
             vaultManager.addItem(newItem)
         }
 

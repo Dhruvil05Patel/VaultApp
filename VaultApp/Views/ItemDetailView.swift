@@ -143,6 +143,29 @@ struct ItemDetailView: View {
                     .padding(.vertical, 2)
                     .background(categoryColor.opacity(0.12))
                     .clipShape(Capsule())
+
+                // Folder badge
+                if let folderID = item.folderID,
+                   let folder = vaultManager.vault.folder(withID: folderID) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "folder.fill").foregroundStyle(folder.color)
+                        Text(folder.name).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
+                // Tag chips
+                if !item.tags.isEmpty {
+                    FlowLayout(spacing: 4) {
+                        ForEach(item.tags, id: \.self) { tag in
+                            Text("#\(tag)")
+                                .font(.caption2)
+                                .foregroundStyle(.orange)
+                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.10))
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
             }
 
             Spacer()
