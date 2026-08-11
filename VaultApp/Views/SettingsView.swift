@@ -141,6 +141,29 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // MARK: Menu Bar Section
+            Section {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Show menu bar icon")
+                        Text("Quick access to your passwords from the menu bar.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $settings.showMenuBarIcon)
+                        .toggleStyle(.switch).labelsHidden()
+                        .onChange(of: settings.showMenuBarIcon) { _, enabled in
+                            if enabled {
+                                MenuBarManager.shared.setup()
+                            } else {
+                                MenuBarManager.shared.teardown()
+                            }
+                        }
+                }
+            } header: {
+                Text("Menu Bar")
+            }
+
             // MARK: About Section
             Section {
                 HStack {
