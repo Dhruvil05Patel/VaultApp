@@ -83,7 +83,7 @@ struct AddItemView: View {
     @ViewBuilder
     private var sheetHeader: some View {
         HStack {
-            Text(isEditing ? "Edit Password" : "Add Password")
+            Text(isEditing ? "Edit Item" : "Add Item")
                 .font(.headline)
             Spacer()
         }
@@ -235,7 +235,7 @@ struct AddItemView: View {
                             .textFieldStyle(.roundedBorder)
                             .font(.system(.body, design: .monospaced))
                             .autocorrectionDisabled()
-                            .onChange(of: totpSecret) { newValue in
+                            .onChange(of: totpSecret) { _, newValue in
                                 handleTOTPChange(newValue)
                             }
 
@@ -343,7 +343,7 @@ struct AddItemView: View {
 
             Spacer()
 
-            Button(isEditing ? "Save Changes" : "Add Password") {
+            Button(isEditing ? "Save Changes" : "Add Item") {
                 saveItem()
             }
             .buttonStyle(.borderedProminent)

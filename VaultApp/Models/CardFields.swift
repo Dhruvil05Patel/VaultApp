@@ -55,6 +55,17 @@ struct CardFields: Codable, Hashable {
         return "•••• •••• •••• \(last4)"
     }
 
+    // Digits grouped in 4s: "4242 4242 4242 4242"
+    var groupedNumber: String {
+        let digits = cardNumber.filter { $0.isNumber }
+        guard !digits.isEmpty else { return cardNumber }
+        let chunked = stride(from: 0, to: digits.count, by: 4).map { start in
+            let end = digits.index(digits.startIndex, offsetBy: min(4, digits.count - start))
+            return String(digits[digits.index(digits.startIndex, offsetBy: start)..<end])
+        }
+        return chunked.joined(separator: " ")
+    }
+
     // Formatted: "04 / 2027"
     var formattedExpiry: String {
         guard !expiryMonth.isEmpty, !expiryYear.isEmpty else { return "" }

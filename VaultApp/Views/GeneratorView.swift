@@ -74,14 +74,14 @@ struct GeneratorView: View {
         }
         .frame(minWidth: 420, minHeight: 460)
         .onAppear { regenerate() }
-        .onChange(of: mode)            { _ in regenerate() }
-        .onChange(of: length)          { _ in regenerate() }
-        .onChange(of: includeUppercase){ _ in regenerate() }
-        .onChange(of: includeNumbers)  { _ in regenerate() }
-        .onChange(of: includeSymbols)  { _ in regenerate() }
-        .onChange(of: excludeAmbiguous){ _ in regenerate() }
-        .onChange(of: wordCount)       { _ in regenerate() }
-        .onChange(of: separator)       { _ in regenerate() }
+        .onChange(of: mode)            { regenerate() }
+        .onChange(of: length)          { regenerate() }
+        .onChange(of: includeUppercase){ regenerate() }
+        .onChange(of: includeNumbers)  { regenerate() }
+        .onChange(of: includeSymbols)  { regenerate() }
+        .onChange(of: excludeAmbiguous){ regenerate() }
+        .onChange(of: wordCount)       { regenerate() }
+        .onChange(of: separator)       { regenerate() }
     }
 
     // MARK: - Mode Picker

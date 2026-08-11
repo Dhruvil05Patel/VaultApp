@@ -34,14 +34,7 @@ struct CardDetailSection: View {
                 secretRow(
                     label: "Card Number",
                     icon: "creditcard",
-                    visibleValue: card.cardNumber.filter { $0.isNumber }
-                        .enumerated()
-                        .map { String($0.element) }
-                        .enumerated()
-                        .reduce("") { acc, pair in
-                            let (i, char) = pair
-                            return acc + char + (i % 4 == 3 && i < 15 ? " " : "")
-                        },
+                    visibleValue: card.groupedNumber,
                     maskedValue: card.maskedNumber,
                     isRevealed: $showCardNumber,
                     copyKey: "cardNumber",
