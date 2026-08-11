@@ -68,7 +68,9 @@ struct MenuBarView: View {
                 MenuBarManager.shared.closePopover()
             } label: {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .padding(4)
                     .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help("Open VaultApp window")
@@ -128,7 +130,10 @@ struct MenuBarView: View {
                 .focused($searchFieldFocused)
                 if !searchQuery.isEmpty {
                     Button { searchQuery = "" } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                        Image(systemName: "xmark.circle.fill")
+                            .padding(4)
+                            .foregroundStyle(.tertiary)
+                            .contentShape(Rectangle())
                     }.buttonStyle(.plain)
                 }
             }
@@ -227,6 +232,7 @@ struct MenuBarView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

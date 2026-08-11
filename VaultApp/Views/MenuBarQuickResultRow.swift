@@ -82,8 +82,10 @@ struct MenuBarQuickResultRow: View {
             autoClearCopied()
         } label: {
             Image(systemName: copiedField == key ? "checkmark" : icon)
+                .padding(4)
                 .foregroundStyle(copiedField == key ? .green : .secondary)
                 .font(.callout)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .help(help)
@@ -100,6 +102,7 @@ struct MenuBarQuickResultRow: View {
             .padding(.horizontal, 8).padding(.vertical, 5)
             .background(Color(NSColor.controlBackgroundColor))
             .clipShape(RoundedRectangle(cornerRadius: 6))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
