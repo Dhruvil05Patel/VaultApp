@@ -212,6 +212,43 @@ final class VaultManager: ObservableObject {
         }
     }
 
+    // MARK: - Folder Management
+
+    func addFolder(_ folder: VaultFolder) {
+        vault.addFolder(folder)
+        try? saveVault()
+    }
+
+    func updateFolder(_ folder: VaultFolder) {
+        vault.updateFolder(folder)
+        try? saveVault()
+    }
+
+    func deleteFolder(id: UUID) {
+        vault.deleteFolder(id: id)
+        try? saveVault()
+    }
+
+    // MARK: - Tag Management
+
+    // Rename a tag across all vault items
+    func renameTag(from old: String, to new: String) {
+        let normalised = VaultItem.normaliseTag(new)
+        guard !normalised.isEmpty else { return }
+        for i in vault.items.indices where vault.items[i].tags.contains(old) {
+            vault.items[i].tags = vault.items[i].tags.map { $0 == old ? normalised : $0 }
+        }
+        try? saveVault()
+    }
+
+    // Delete a tag from all vault items
+    func deleteTag(_ tag: String) {
+        for i in vault.items.indices {
+            vault.items[i].tags.removeAll { $0 == tag }
+        }
+        try? saveVault()
+    }
+
     // MARK: - Error Dismissal
 
     func clearError() {

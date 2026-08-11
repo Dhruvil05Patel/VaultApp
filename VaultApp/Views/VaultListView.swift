@@ -4,10 +4,24 @@ struct VaultListView: View {
 
     @EnvironmentObject var vaultManager: VaultManager
 
+    // Sidebar filter — drives the filtered items list
+    enum SidebarFilter: Equatable {
+        case all
+        case category(VaultItem.Category)
+        case folder(UUID)
+        case tag(String)
+    }
+
     // Search and filter state
     @State private var searchQuery: String = ""
-    @State private var selectedCategory: VaultItem.Category? = nil
+    @State private var sidebarFilter: SidebarFilter = .all
     @State private var selectedItemID: UUID? = nil
+
+    // Folder / tag management state
+    @State private var showFolderManager: Bool = false
+    @State private var folderToEdit: VaultFolder? = nil
+    @State private var tagToManage: String? = nil
+    @State private var showTagRename: Bool = false
 
     // Sheet presentation state
     @State private var showAddItem: Bool = false
@@ -19,11 +33,22 @@ struct VaultListView: View {
     // MARK: - Filtered Items
 
     private var filteredItems: [VaultItem] {
-        var items = vaultManager.vault.search(query: searchQuery)
-        if let category = selectedCategory {
-            items = items.filter { $0.category == category }
+        var base: [VaultItem]
+        switch sidebarFilter {
+        case .all:              base = vaultManager.vault.items
+        case .category(let c):  base = vaultManager.vault.items.filter { $0.category == c }
+        case .folder(let id):   base = vaultManager.vault.items(inFolder: id)
+        case .tag(let t):       base = vaultManager.vault.items(withTag: t)
         }
-        return items.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        if !searchQuery.isEmpty {
+            base = base.filter {
+                $0.title.localizedCaseInsensitiveContains(searchQuery) ||
+                $0.username.localizedCaseInsensitiveContains(searchQuery) ||
+                $0.url.localizedCaseInsensitiveContains(searchQuery) ||
+                $0.tags.joined(separator: " ").localizedCaseInsensitiveContains(searchQuery)
+            }
+        }
+        return base.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 
     // MARK: - Body
@@ -55,6 +80,16 @@ struct VaultListView: View {
             ExportView()
                 .environmentObject(vaultManager)
         }
+        .sheet(isPresented: $showFolderManager) {
+            FolderManageView(folder: folderToEdit)
+                .environmentObject(vaultManager)
+        }
+        .sheet(isPresented: $showTagRename) {
+            if let tag = tagToManage {
+                TagRenameView(oldTag: tag)
+                    .environmentObject(vaultManager)
+            }
+        }
     }
 
     // MARK: - Sidebar
@@ -62,8 +97,74 @@ struct VaultListView: View {
     @ViewBuilder
     private var sidebarContent: some View {
         List(selection: $selectedItemID) {
-            // Category filter buttons
-            categoryFilterSection
+            // ── Section 1: All Items + Categories ──
+            Section("Library") {
+                sidebarRow(label: "All Items", icon: "tray.full.fill",
+                           isSelected: sidebarFilter == .all) {
+                    sidebarFilter = .all
+                }
+                ForEach(VaultItem.Category.allCases, id: \.self) { cat in
+                    sidebarRow(label: cat.rawValue, icon: cat.icon,
+                               count: vaultManager.vault.items.filter { $0.category == cat }.count,
+                               isSelected: sidebarFilter == .category(cat)) {
+                        sidebarFilter = .category(cat)
+                    }
+                }
+            }
+
+            // ── Section 2: Folders ──
+            Section {
+                ForEach(vaultManager.vault.folders.sorted(by: { $0.name < $1.name })) { folder in
+                    sidebarRow(
+                        label: folder.name,
+                        icon: "folder.fill",
+                        iconColor: folder.color,
+                        count: vaultManager.vault.items(inFolder: folder.id).count,
+                        isSelected: sidebarFilter == .folder(folder.id)
+                    ) {
+                        sidebarFilter = .folder(folder.id)
+                    }
+                    .contextMenu {
+                        Button("Rename…") { folderToEdit = folder; showFolderManager = true }
+                        Button("Delete", role: .destructive) {
+                            vaultManager.deleteFolder(id: folder.id)
+                            if sidebarFilter == .folder(folder.id) { sidebarFilter = .all }
+                        }
+                    }
+                }
+                Button {
+                    showFolderManager = true; folderToEdit = nil
+                } label: {
+                    Label("New Folder…", systemImage: "folder.badge.plus")
+                        .foregroundStyle(.blue)
+                }.buttonStyle(.plain)
+            } header: {
+                Text("Folders")
+            }
+
+            // ── Section 3: Tags ──
+            Section {
+                ForEach(vaultManager.vault.allTags, id: \.self) { tag in
+                    sidebarRow(
+                        label: "#\(tag)",
+                        icon: "tag.fill",
+                        iconColor: .orange,
+                        count: vaultManager.vault.items(withTag: tag).count,
+                        isSelected: sidebarFilter == .tag(tag)
+                    ) {
+                        sidebarFilter = .tag(tag)
+                    }
+                    .contextMenu {
+                        Button("Rename Tag…") { tagToManage = tag; showTagRename = true }
+                        Button("Delete Tag", role: .destructive) {
+                            vaultManager.deleteTag(tag)
+                            if sidebarFilter == .tag(tag) { sidebarFilter = .all }
+                        }
+                    }
+                }
+            } header: {
+                Text("Tags")
+            }
 
             // Vault items
             Section {
@@ -124,28 +225,24 @@ struct VaultListView: View {
         .frame(minWidth: 240)
     }
 
-    // MARK: - Category Filter Section
+    // MARK: - Sidebar Row
 
     @ViewBuilder
-    private var categoryFilterSection: some View {
-        Section {
-            // "All" button
-            Label("All Items", systemImage: "square.grid.2x2.fill")
-                .foregroundStyle(selectedCategory == nil ? .blue : .primary)
-                .onTapGesture { selectedCategory = nil }
-
-            ForEach(VaultItem.Category.allCases, id: \.self) { category in
-                Label(category.rawValue, systemImage: category.icon)
-                    .foregroundStyle(selectedCategory == category ? .blue : .primary)
-                    .onTapGesture {
-                        selectedCategory = selectedCategory == category ? category : nil
-                    }
-            }
-        } header: {
-            Text("Categories")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    private func sidebarRow(label: String, icon: String,
+                            iconColor: Color = .accentColor,
+                            count: Int? = nil,
+                            isSelected: Bool,
+                            action: @escaping () -> Void) -> some View {
+        HStack {
+            Image(systemName: icon).foregroundStyle(iconColor).frame(width: 20)
+            Text(label).lineLimit(1)
+            Spacer()
+            if let count { Text("\(count)").foregroundStyle(.tertiary).font(.caption) }
         }
+        .contentShape(Rectangle())
+        .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .onTapGesture { action() }
     }
 
     // MARK: - Detail Panel

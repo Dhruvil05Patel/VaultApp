@@ -25,8 +25,20 @@ struct VaultItem: Codable, Identifiable, Hashable {
     // Empty string means no TOTP is configured for this entry.
     var totpSecret: String = ""
 
+    // Which folder this item lives in (nil = root)
+    var folderID: UUID? = nil
+
+    // List of tag strings, lowercase, no duplicates
+    var tags: [String] = []
+
     // Convenience — true when a non-empty TOTP secret is stored
     var hasTOTP: Bool { !totpSecret.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    // Convenience — true when the item has at least one tag
+    var hasTags: Bool { !tags.isEmpty }
+
+    // Convenience — true when the item belongs to a folder
+    var isInFolder: Bool { folderID != nil }
 
     var createdAt: Date    // Set once at creation, never updated
     var updatedAt: Date    // Updated every time the item is edited
@@ -63,6 +75,41 @@ struct VaultItem: Codable, Identifiable, Hashable {
         }
     }
 
+    // MARK: - Codable
+
+    // Custom decoder so fields added after the vault format was created
+    // (tags, folderID, breach status, …) fall back to their defaults instead
+    // of making the whole vault undecodable.
+    private enum CodingKeys: String, CodingKey {
+        case id, title, username, password, url, notes
+        case cardFields, identityFields, secureNoteBody, totpSecret
+        case folderID, tags
+        case createdAt, updatedAt, category
+        case breachStatus, breachCount, breachCheckedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id      = try c.decode(UUID.self,        forKey: .id)
+        title   = try c.decode(String.self,      forKey: .title)
+        username = try c.decode(String.self,     forKey: .username)
+        password = try c.decode(String.self,     forKey: .password)
+        url     = try c.decode(String.self,      forKey: .url)
+        notes   = try c.decode(String.self,      forKey: .notes)
+        cardFields     = try c.decodeIfPresent(CardFields.self,     forKey: .cardFields)
+        identityFields = try c.decodeIfPresent(IdentityFields.self, forKey: .identityFields)
+        secureNoteBody = try c.decodeIfPresent(String.self, forKey: .secureNoteBody) ?? ""
+        totpSecret     = try c.decodeIfPresent(String.self, forKey: .totpSecret) ?? ""
+        folderID = try c.decodeIfPresent(UUID.self, forKey: .folderID)
+        tags     = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+        category  = try c.decode(Category.self, forKey: .category)
+        breachStatus    = try c.decodeIfPresent(BreachStatus.self, forKey: .breachStatus) ?? .unknown
+        breachCount     = try c.decodeIfPresent(Int.self, forKey: .breachCount) ?? 0
+        breachCheckedAt = try c.decodeIfPresent(Date.self, forKey: .breachCheckedAt)
+    }
+
     // MARK: - Initializer
 
     init(
@@ -92,5 +139,12 @@ struct VaultItem: Codable, Identifiable, Hashable {
         var copy = self
         copy.updatedAt = Date()
         return copy
+    }
+
+    // Normalise a tag: lowercase, trim, replace spaces with hyphens
+    static func normaliseTag(_ tag: String) -> String {
+        tag.lowercased()
+           .trimmingCharacters(in: .whitespacesAndNewlines)
+           .replacingOccurrences(of: " ", with: "-")
     }
 }
