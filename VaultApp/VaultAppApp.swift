@@ -1,7 +1,17 @@
 import SwiftUI
 
+// Keeps the app alive in the menu bar when the main window is closed.
+class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        // Return false to keep running in the menu bar when main window is closed
+        return !AppSettings.shared.showMenuBarIcon
+    }
+}
+
 @main
 struct VaultAppApp: App {
+
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     private let autoLockService = AutoLockService(vaultManager: VaultManager.shared)
 
@@ -17,6 +27,7 @@ struct VaultAppApp: App {
                     if AppSettings.shared.iCloudSyncEnabled {
                         SyncService.shared.start()
                     }
+                    MenuBarManager.shared.setup()
                 }
         }
         .windowStyle(.titleBar)
