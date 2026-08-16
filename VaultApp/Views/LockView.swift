@@ -9,9 +9,6 @@ struct LockView: View {
     @State private var confirmPassword: String = ""
     @State private var showPassword: Bool = false
     @FocusState private var passwordFieldFocused: Bool
-    @State private var biometricError: String? = nil
-    @State private var allowBiometric: Bool = false  // prevents auto-trigger on launch
-    @State private var hasAutoPrompted: Bool = false
 
     // Computed: are we creating a new vault or unlocking an existing one?
     private var isCreatingVault: Bool {
@@ -19,7 +16,7 @@ struct LockView: View {
     }
 
     private var canUseBiometrics: Bool {
-        allowBiometric && !isCreatingVault && BiometricService.isAvailable() && AppSettings.shared.isBiometricEnabled
+        !isCreatingVault && BiometricService.isAvailable() && AppSettings.shared.isBiometricEnabled
     }
 
     private var biometricName: String {
@@ -160,35 +157,17 @@ struct LockView: View {
                 // Biometric unlock button / authenticating state
                 if canUseBiometrics && !isCreatingVault {
                     VStack(spacing: 8) {
-                        if isAuthenticating {
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                    .controlSize(.regular)
-                                Text("Authenticating with \(biometricName)…")
-                                    .font(.callout)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: 360)
-                        } else {
-                            Button(action: unlockWithBiometrics) {
-                                Label(
-                                    "Unlock with \(biometricName)",
-                                    systemImage: "touchid"
-                                )
-                                .font(.callout)
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.large)
-                            .frame(maxWidth: 360)
-                            .disabled(vaultManager.isLoading)
+                        Button(action: unlockWithBiometrics) {
+                            Label(
+                                isAuthenticating ? "Authenticating…" : "Unlock with \(biometricName)",
+                                systemImage: "touchid"
+                            )
+                            .font(.callout)
                         }
-
-                        if let bioError = biometricError {
-                            Text(bioError)
-                                .font(.caption)
-                                .foregroundStyle(.red)
-                                .multilineTextAlignment(.center)
-                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                        .frame(maxWidth: 360)
+                        .disabled(vaultManager.isLoading || isAuthenticating)
                     }
                     .padding(.top, 8)
                 }
@@ -201,16 +180,6 @@ struct LockView: View {
             print("[LOCKVIEW] onAppear, isCreatingVault = \(isCreatingVault), authenticationState = \(vaultManager.authenticationState)")
             vaultManager.clearError()
             passwordFieldFocused = true
-            biometricError = nil
-            // Enable biometric after brief delay to prevent Xcode/debugger auto-trigger on launch
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                allowBiometric = true
-                
-                if canUseBiometrics && !hasAutoPrompted {
-                    hasAutoPrompted = true
-                    unlockWithBiometrics()
-                }
-            }
         }
     }
 
@@ -247,18 +216,7 @@ struct LockView: View {
 
     private func unlockWithBiometrics() {
         print("[LOCKVIEW] unlockWithBiometrics() button tapped")
-        biometricError = nil
-        Task {
-            await vaultManager.authenticateWithBiometrics()
-            // Error is now handled by VaultManager and shown via vaultManager.errorMessage
-            // but we can also show it locally if needed
-            await MainActor.run {
-                if let error = vaultManager.errorMessage,
-                   vaultManager.authenticationState == .locked {
-                    biometricError = error
-                }
-            }
-        }
+        vaultManager.authenticateForUnlock()
     }
 }
 
