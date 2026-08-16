@@ -23,7 +23,7 @@ final class VaultManager: ObservableObject {
 
     // MARK: - Published State (drives all SwiftUI views)
 
-    @Published var authenticationState: AuthenticationState = .locked
+    @Published private(set) var authenticationState: AuthenticationState = .locked
     @Published var vault: Vault = Vault()
     @Published var errorMessage: String? = nil
     @Published var isLoading: Bool = false
@@ -288,9 +288,42 @@ final class VaultManager: ObservableObject {
                 }
             } catch {
                 self.errorMessage = "Biometric unlock failed. Use your master password."
+                self.authenticationState = .locked
                 print("[UNLOCK_BIOMETRIC] ERROR: \(error)")
             }
             self.isLoading = false
+        }
+    }
+
+    // Attempt Touch ID authentication to unlock the vault.
+    func authenticateForUnlock() {
+        guard authenticationState == .locked else { return }
+        authenticationState = .authenticating
+        errorMessage = nil
+        
+        Task {
+            do {
+                let keyData = try await BiometricService.retrieveKey(reason: "Unlock VaultApp")
+                await MainActor.run {
+                    self.unlockWithBiometricKey(keyData)
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = error.localizedDescription
+                    self.authenticationState = .locked
+                    
+                    if let bioError = error as? BiometricService.BiometricError {
+                        switch bioError {
+                        case .keyNotFound, .keychainReadFailed:
+                            // The credential is fundamentally missing or corrupted.
+                            // Reset the preference so the user can be prompted to set it up again.
+                            self.disableBiometric()
+                        default:
+                            break
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -348,6 +381,7 @@ final class VaultManager: ObservableObject {
     func disableBiometric() {
         BiometricService.deleteKey()
         AppSettings.shared.isBiometricEnabled = false
+        AppSettings.shared.hasAnsweredBiometricPrompt = false
     }
 
     // MARK: - Export

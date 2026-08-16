@@ -34,7 +34,7 @@ struct ContentView: View {
             print("[CONTENT] onChange isUnlocked = \(unlocked)")
             if unlocked,
                BiometricService.isAvailable(),
-               !AppSettings.shared.isBiometricEnabled {
+               !AppSettings.shared.hasAnsweredBiometricPrompt {
                 showEnableBiometricOffer = true
             }
         }
@@ -79,13 +79,27 @@ struct ContentView: View {
             Button("Enable") {
                 Task {
                     do {
+                        print("[BIOMETRIC-SETUP] ENABLE BUTTON PRESSED")
+                        print("[BIOMETRIC-SETUP] value BEFORE SAVE = \(UserDefaults.standard.bool(forKey: "hasAnsweredBiometricPrompt"))")
+                        
                         try await vaultManager.enableBiometric()
+                        
+                        print("[BIOMETRIC-SETUP] SAVING ENABLED STATE")
+                        AppSettings.shared.hasAnsweredBiometricPrompt = true
+                        
+                        // Force UserDefaults synchronization for debugging
+                        UserDefaults.standard.synchronize()
+                        
+                        print("[BIOMETRIC-SETUP] value AFTER SAVE = \(AppSettings.shared.hasAnsweredBiometricPrompt)")
+                        print("[BIOMETRIC-SETUP] READ-BACK VALUE = \(UserDefaults.standard.bool(forKey: "hasAnsweredBiometricPrompt"))")
                     } catch {
                         biometricEnableError = error.localizedDescription
                     }
                 }
             }
-            Button("Not Now", role: .cancel) {}
+            Button("Not Now", role: .cancel) {
+                AppSettings.shared.hasAnsweredBiometricPrompt = true
+            }
         } message: {
             if let bioError = biometricEnableError {
                 Text(bioError)

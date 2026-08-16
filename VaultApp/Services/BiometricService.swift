@@ -161,18 +161,22 @@ enum BiometricService {
     // MARK: - Check if Key is Stored
 
     static func hasStoredKey() -> Bool {
+        let context = LAContext()
+        context.interactionNotAllowed = true // Prevents Touch ID prompt during existence check
+
         let query: [String: Any] = [
             kSecClass as String:       kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: keychainAccount,
             kSecMatchLimit as String:  kSecMatchLimitOne,
             kSecReturnAttributes as String: true,
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip
+            kSecUseAuthenticationContext as String: context
         ]
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        
-        // When skipping UI on an item that requires biometrics, it may return errSecInteractionNotAllowed or errSecAuthFailed
-        return status == errSecSuccess || status == errSecInteractionNotAllowed || status == errSecAuthFailed
+        // If the item exists but is protected, it returns errSecInteractionNotAllowed (-25308) or errSecAuthFailed
+        // If it does not exist, it returns errSecItemNotFound (-25300).
+        // If it succeeds, it returns errSecSuccess (0).
+        return status != errSecItemNotFound
     }
 }

@@ -173,9 +173,9 @@ struct GeneratorView: View {
 
             // Character type toggles
             VStack(alignment: .leading, spacing: 10) {
-                toggleRow("Uppercase letters (A-Z)", binding: $includeUppercase)
-                toggleRow("Numbers (0-9)", binding: $includeNumbers)
-                toggleRow("Symbols (!@#$...)", binding: $includeSymbols)
+                toggleRow("Uppercase letters (A-Z)", binding: uppercaseBinding)
+                toggleRow("Numbers (0-9)", binding: numbersBinding)
+                toggleRow("Symbols (!@#$...)", binding: symbolsBinding)
                 toggleRow("Exclude ambiguous characters (0/O, l/I/1)", binding: $excludeAmbiguous)
             }
         }
@@ -281,6 +281,38 @@ struct GeneratorView: View {
                 .toggleStyle(.switch)
                 .labelsHidden()
         }
+    }
+
+    // MARK: - Option Bindings
+
+    private var uppercaseBinding: Binding<Bool> {
+        Binding<Bool>(
+            get: { includeUppercase },
+            set: { newValue in
+                if !newValue && !includeNumbers && !includeSymbols { return }
+                includeUppercase = newValue
+            }
+        )
+    }
+
+    private var numbersBinding: Binding<Bool> {
+        Binding<Bool>(
+            get: { includeNumbers },
+            set: { newValue in
+                if !newValue && !includeUppercase && !includeSymbols { return }
+                includeNumbers = newValue
+            }
+        )
+    }
+
+    private var symbolsBinding: Binding<Bool> {
+        Binding<Bool>(
+            get: { includeSymbols },
+            set: { newValue in
+                if !newValue && !includeUppercase && !includeNumbers { return }
+                includeSymbols = newValue
+            }
+        )
     }
 
     // MARK: - Logic
