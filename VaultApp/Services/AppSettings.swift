@@ -30,6 +30,11 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(isBiometricEnabled, forKey: "isBiometricEnabled") }
     }
 
+    // Whether the user has explicitly answered the biometric setup prompt (either Enable or Not Now).
+    @Published var hasAnsweredBiometricPrompt: Bool {
+        didSet { UserDefaults.standard.set(hasAnsweredBiometricPrompt, forKey: "hasAnsweredBiometricPrompt") }
+    }
+
     // Whether to sync the encrypted vault to iCloud Drive. Disabled by default.
     @Published var iCloudSyncEnabled: Bool {
         didSet { UserDefaults.standard.set(iCloudSyncEnabled, forKey: "iCloudSyncEnabled") }
@@ -47,6 +52,7 @@ final class AppSettings: ObservableObject {
         self.lockOnSleep          = UserDefaults.standard.object(forKey: "lockOnSleep") as? Bool ?? true
         self.showPasswordsByDefault = UserDefaults.standard.object(forKey: "showPasswordsByDefault") as? Bool ?? false
         self.isBiometricEnabled   = UserDefaults.standard.object(forKey: "isBiometricEnabled") as? Bool ?? false
+        self.hasAnsweredBiometricPrompt = UserDefaults.standard.object(forKey: "hasAnsweredBiometricPrompt") as? Bool ?? false
         self.iCloudSyncEnabled    = UserDefaults.standard.object(forKey: "iCloudSyncEnabled") as? Bool ?? false
         self.showMenuBarIcon      = UserDefaults.standard.object(forKey: "showMenuBarIcon") as? Bool ?? true
     }

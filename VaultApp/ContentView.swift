@@ -34,7 +34,7 @@ struct ContentView: View {
             print("[CONTENT] onChange isUnlocked = \(unlocked)")
             if unlocked,
                BiometricService.isAvailable(),
-               !AppSettings.shared.isBiometricEnabled {
+               !AppSettings.shared.hasAnsweredBiometricPrompt {
                 showEnableBiometricOffer = true
             }
         }
@@ -80,12 +80,15 @@ struct ContentView: View {
                 Task {
                     do {
                         try await vaultManager.enableBiometric()
+                        AppSettings.shared.hasAnsweredBiometricPrompt = true
                     } catch {
                         biometricEnableError = error.localizedDescription
                     }
                 }
             }
-            Button("Not Now", role: .cancel) {}
+            Button("Not Now", role: .cancel) {
+                AppSettings.shared.hasAnsweredBiometricPrompt = true
+            }
         } message: {
             if let bioError = biometricEnableError {
                 Text(bioError)
