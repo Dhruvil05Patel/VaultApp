@@ -67,7 +67,7 @@ struct MenuBarView: View {
                 NSApp.windows.first?.makeKeyAndOrderFront(nil)
                 MenuBarManager.shared.closePopover()
             } label: {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                Image(systemName: "chevron.up.chevron.down")
                     .padding(4)
                     .foregroundStyle(.secondary)
                     .contentShape(Rectangle())
