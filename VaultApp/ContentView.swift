@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
 
     @EnvironmentObject var vaultManager: VaultManager
+    @ObservedObject private var settings = AppSettings.shared
 
     // These are triggered by menu bar commands via NotificationCenter
     @State private var showAddItem: Bool = false
@@ -29,6 +30,14 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: vaultManager.isUnlocked)
+        // ── Onboarding ──
+        // Show as a sheet that blocks the lock screen until dismissed
+        .sheet(isPresented: Binding(
+            get:  { !settings.hasCompletedOnboarding },
+            set:  { if !$0 { settings.hasCompletedOnboarding = true } }
+        )) {
+            OnboardingView()
+        }
         // Offer to enable Touch ID after a password unlock
         .onChange(of: vaultManager.isUnlocked) { _, unlocked in
             print("[CONTENT] onChange isUnlocked = \(unlocked)")

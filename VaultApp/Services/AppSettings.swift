@@ -45,6 +45,10 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(showMenuBarIcon, forKey: "showMenuBarIcon") }
     }
 
+    @Published var hasCompletedOnboarding: Bool {
+        didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
+    }
+
     private init() {
         // Load persisted values, falling back to sensible defaults
         self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
@@ -55,5 +59,6 @@ final class AppSettings: ObservableObject {
         self.hasAnsweredBiometricPrompt = UserDefaults.standard.object(forKey: "hasAnsweredBiometricPrompt") as? Bool ?? false
         self.iCloudSyncEnabled    = UserDefaults.standard.object(forKey: "iCloudSyncEnabled") as? Bool ?? false
         self.showMenuBarIcon      = UserDefaults.standard.object(forKey: "showMenuBarIcon") as? Bool ?? true
+        self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     }
 }

@@ -164,6 +164,16 @@ struct SettingsView: View {
                 Text("Menu Bar")
             }
 
+            // MARK: Developer Section
+            #if DEBUG
+            Section("Developer") {
+                Button("Reset Onboarding") {
+                    AppSettings.shared.hasCompletedOnboarding = false
+                }
+                .foregroundStyle(.red)
+            }
+            #endif
+
             // MARK: About Section
             Section {
                 HStack {
