@@ -25,6 +25,7 @@ struct VaultListView: View {
 
     // Sheet presentation state
     @State private var showAddItem: Bool = false
+    @State private var addCategory: VaultItem.Category = .login
     @State private var showGenerator: Bool = false
     @State private var showBulkBreachCheck: Bool = false
     @State private var showImport: Bool = false
@@ -62,7 +63,7 @@ struct VaultListView: View {
         .searchable(text: $searchQuery, prompt: "Search passwords…")
         .toolbar { toolbarContent }
         .sheet(isPresented: $showAddItem) {
-            AddItemView()  // Built in Task 09
+            AddItemView(initialCategory: addCategory)  // Built in Task 09
                 .environmentObject(vaultManager)
         }
         .sheet(isPresented: $showGenerator) {
@@ -280,7 +281,10 @@ struct VaultListView: View {
                 title: "Your vault is empty",
                 message: "Add your first password to get started. VaultApp will keep it safe.",
                 actionLabel: "Add Password",
-                action: { showAddItem = true }
+                action: { 
+                    addCategory = .login
+                    showAddItem = true 
+                }
             )
 
         case .all:
@@ -302,7 +306,10 @@ struct VaultListView: View {
                 title: "No \(cat.rawValue) items",
                 message: "You haven't added any \(cat.rawValue.lowercased()) entries yet.",
                 actionLabel: "Add \(cat.rawValue)",
-                action: { showAddItem = true }
+                action: { 
+                    addCategory = cat
+                    showAddItem = true 
+                }
             )
 
         case .folder(let id) where filteredItems.isEmpty && searchQuery.isEmpty:
@@ -313,7 +320,10 @@ struct VaultListView: View {
                 title: "\(folderName) is empty",
                 message: "Move items here from the All Items view, or add a new password directly to this folder.",
                 actionLabel: "Add Password",
-                action: { showAddItem = true }
+                action: { 
+                    addCategory = .login
+                    showAddItem = true 
+                }
             )
 
         case .tag(let tag) where filteredItems.isEmpty && searchQuery.isEmpty:
@@ -384,6 +394,7 @@ struct VaultListView: View {
             .help("Open the password generator")
 
             Button {
+                addCategory = .login
                 showAddItem = true
             } label: {
                 Label("Add Password", systemImage: "plus")
