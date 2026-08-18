@@ -51,10 +51,26 @@ struct BulkBreachCheckView: View {
                     }
 
                     if let error {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                            .padding(.horizontal)
+                        VStack(spacing: 10) {
+                            Image(systemName: "wifi.exclamationmark")
+                                .font(.system(size: 32))
+                                .foregroundStyle(.orange)
+                            Text("Breach check interrupted")
+                                .font(.headline)
+                            Text(error)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                            Text("Partial results above may be incomplete. Run the check again when your connection is stable.")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .multilineTextAlignment(.center)
+                            Button("Try Again") {
+                                runBulkCheck()
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .padding()
                     }
                 }
                 .padding(24)

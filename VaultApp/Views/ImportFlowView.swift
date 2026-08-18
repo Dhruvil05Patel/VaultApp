@@ -134,16 +134,9 @@ struct ImportFlowView: View {
 
                 // Error
                 if let error = errorMessage {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                        Text(error)
-                            .font(.callout)
-                            .foregroundStyle(.red)
+                    ErrorBannerView(message: error) {
+                        errorMessage = nil
                     }
-                    .padding(12)
-                    .background(Color.red.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
 
                 // Action button
@@ -222,7 +215,7 @@ struct ImportFlowView: View {
                 }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = friendlyImportError(error)
                     self.isLoading = false
                 }
             }
@@ -246,10 +239,26 @@ struct ImportFlowView: View {
                 }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = friendlyImportError(error)
                     self.isLoading = false
                 }
             }
         }
+    }
+
+    private func friendlyImportError(_ error: Error) -> String {
+        if let importError = error as? ImportService.ImportError {
+            switch importError {
+            case .emptyFile:
+                return "The file is empty. Make sure you exported the file correctly from your password manager."
+            case .unrecognisedFormat:
+                return "Could not read this file. Make sure you chose the correct source app and exported as CSV."
+            case .noValidRows:
+                return "No password entries were found. The file may only contain headers, or all entries were filtered out."
+            case .unknown(let e):
+                return "Unexpected error: \(e.localizedDescription)"
+            }
+        }
+        return "Could not import the file. \(error.localizedDescription)"
     }
 }

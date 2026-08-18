@@ -98,7 +98,7 @@ final class VaultManager: ObservableObject {
                 self.vault = emptyVault
                 self.authenticationState = .unlocked
             } catch {
-                self.errorMessage = error.localizedDescription
+                self.errorMessage = userFacingError(error)
             }
             self.isLoading = false
         }
@@ -131,7 +131,7 @@ final class VaultManager: ObservableObject {
                 }
             } catch {
                 // Show a generic error — don't reveal whether the file or the password is wrong
-                self.errorMessage = "Incorrect password or corrupted vault."
+                self.errorMessage = "Incorrect password. Try again, or restore from a backup if you think the vault is corrupted."
                 print("[UNLOCK] ERROR: \(error)")
             }
             self.isLoading = false
@@ -190,7 +190,7 @@ final class VaultManager: ObservableObject {
         do {
             try saveVault()
         } catch {
-            errorMessage = "Failed to save: \(error.localizedDescription)"
+            errorMessage = userFacingError(error)
         }
     }
 
@@ -199,7 +199,7 @@ final class VaultManager: ObservableObject {
         do {
             try saveVault()
         } catch {
-            errorMessage = "Failed to save: \(error.localizedDescription)"
+            errorMessage = userFacingError(error)
         }
     }
 
@@ -208,7 +208,7 @@ final class VaultManager: ObservableObject {
         do {
             try saveVault()
         } catch {
-            errorMessage = "Failed to save: \(error.localizedDescription)"
+            errorMessage = userFacingError(error)
         }
     }
 
@@ -309,7 +309,7 @@ final class VaultManager: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = error.localizedDescription
+                    self.errorMessage = userFacingError(error)
                     self.authenticationState = .locked
                     
                     if let bioError = error as? BiometricService.BiometricError {
@@ -371,7 +371,7 @@ final class VaultManager: ObservableObject {
         } catch {
             // On any failure (cancel, error, lockout), return to locked state
             self.authenticationState = .locked
-            self.errorMessage = error.localizedDescription
+            self.errorMessage = userFacingError(error)
             print("[AUTH] FAILURE: authenticationState -> locked, error = \(error)")
         }
         self.isLoading = false
@@ -459,5 +459,32 @@ final class VaultManager: ObservableObject {
                 await syncService?.uploadVault()
             }
         }
+    }
+
+    private func userFacingError(_ error: Error) -> String {
+        // Map known error types to friendly messages
+        if let cryptoError = error as? EncryptionService.CryptoError {
+            switch cryptoError {
+            case .decryptionFailed:
+                return "Incorrect password or corrupted file."
+            case .encryptionFailed:
+                return "Failed to encrypt data. Try again."
+            case .keyDerivationFailed:
+                return "Could not derive encryption key. Check available memory."
+            case .invalidData:
+                return "Vault file appears corrupted. Restore from a backup."
+            }
+        }
+        // File system errors
+        let nsError = error as NSError
+        if nsError.domain == NSCocoaErrorDomain {
+            switch nsError.code {
+            case 4:   return "Vault file not found. It may have been moved or deleted."
+            case 257:  return "Permission denied. Check that the app can access Application Support."
+            case 516:  return "Not enough disk space to save the vault."
+            default:  break
+            }
+        }
+        return "An unexpected error occurred. Please try again."
     }
 }

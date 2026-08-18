@@ -8,6 +8,7 @@ struct LockView: View {
     @State private var masterPassword: String = ""
     @State private var confirmPassword: String = ""
     @State private var showPassword: Bool = false
+    @State private var hasFailedOnce: Bool = false
     @FocusState private var passwordFieldFocused: Bool
 
     // Computed: are we creating a new vault or unlocking an existing one?
@@ -118,15 +119,32 @@ struct LockView: View {
 
                     // Error message from VaultManager
                     if let error = vaultManager.errorMessage {
-                        HStack {
+                        HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .foregroundStyle(.red)
-                            Text(error)
-                                .font(.caption)
-                                .foregroundStyle(.red)
+                                .padding(.top, 1)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(error)
+                                    .font(.callout)
+                                    .foregroundStyle(.red)
+                                // Show "Forgot password?" hint after a failed attempt
+                                if !isCreatingVault && hasFailedOnce {
+                                    Text("Forgot your master password? VaultApp cannot recover it, but you can restore from a backup.")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
                             Spacer()
+                            Button {
+                                vaultManager.clearError()
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .padding(10)
+                        .padding(12)
                         .background(Color.red.opacity(0.08))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
@@ -180,6 +198,11 @@ struct LockView: View {
             print("[LOCKVIEW] onAppear, isCreatingVault = \(isCreatingVault), authenticationState = \(vaultManager.authenticationState)")
             vaultManager.clearError()
             passwordFieldFocused = true
+        }
+        .onChange(of: vaultManager.errorMessage) { _, newError in
+            if newError != nil {
+                hasFailedOnce = true
+            }
         }
     }
 

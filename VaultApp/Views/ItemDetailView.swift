@@ -27,15 +27,13 @@ struct ItemDetailView: View {
                 // Fields
                 VStack(alignment: .leading, spacing: 20) {
                     if item.category == .login {
-                        if !item.username.isEmpty {
-                            fieldRow(
-                                label: "Username",
-                                value: item.username,
-                                icon: "person.fill",
-                                copyKey: "username",
-                                isSecret: false
-                            )
-                        }
+                        fieldRow(
+                            label: "Username",
+                            value: item.username,
+                            icon: "person.fill",
+                            copyKey: "username",
+                            isSecret: false
+                        )
 
                         passwordRow
 
@@ -45,16 +43,14 @@ struct ItemDetailView: View {
 
                         breachSection
 
-                        if !item.url.isEmpty {
-                            fieldRow(
-                                label: "Website",
-                                value: item.url,
-                                icon: "globe",
-                                copyKey: "url",
-                                isSecret: false,
-                                isURL: true
-                            )
-                        }
+                        fieldRow(
+                            label: "Website",
+                            value: item.url,
+                            icon: "globe",
+                            copyKey: "url",
+                            isSecret: false,
+                            isURL: true
+                        )
                     } else if item.category == .creditCard {
                         if let card = item.cardFields {
                             CardDetailSection(card: card)
@@ -190,7 +186,12 @@ struct ItemDetailView: View {
                 .fontWeight(.medium)
 
             HStack {
-                if isURL, let url = URL(string: value.hasPrefix("http") ? value : "https://\(value)") {
+                if value.isEmpty {
+                    Text("Not set")
+                        .font(.body)
+                        .foregroundStyle(.tertiary)
+                        .italic()
+                } else if isURL, let url = URL(string: value.hasPrefix("http") ? value : "https://\(value)") {
                     Link(value, destination: url)
                         .font(.body)
                         .lineLimit(1)
@@ -203,7 +204,9 @@ struct ItemDetailView: View {
 
                 Spacer()
 
-                copyButton(value: value, key: copyKey)
+                if !value.isEmpty {
+                    copyButton(value: value, key: copyKey)
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)

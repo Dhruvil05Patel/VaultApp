@@ -148,9 +148,9 @@ struct ExportView: View {
 
             // Error
             if let error = errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                ErrorBannerView(message: error) {
+                    errorMessage = nil
+                }
             }
 
             // Export button
@@ -242,9 +242,9 @@ struct ExportView: View {
             }
 
             if let err = restoreError {
-                Text(err)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                ErrorBannerView(message: err) {
+                    restoreError = nil
+                }
             }
 
             Button {
@@ -278,9 +278,9 @@ struct ExportView: View {
                 .frame(width: 280)
 
             if let err = restoreError {
-                Text(err)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                ErrorBannerView(message: err) {
+                    restoreError = nil
+                }
             }
 
             HStack(spacing: 12) {

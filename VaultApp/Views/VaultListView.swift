@@ -25,6 +25,7 @@ struct VaultListView: View {
 
     // Sheet presentation state
     @State private var showAddItem: Bool = false
+    @State private var addCategory: VaultItem.Category = .login
     @State private var showGenerator: Bool = false
     @State private var showBulkBreachCheck: Bool = false
     @State private var showImport: Bool = false
@@ -62,7 +63,7 @@ struct VaultListView: View {
         .searchable(text: $searchQuery, prompt: "Search passwords…")
         .toolbar { toolbarContent }
         .sheet(isPresented: $showAddItem) {
-            AddItemView()  // Built in Task 09
+            AddItemView(initialCategory: addCategory)  // Built in Task 09
                 .environmentObject(vaultManager)
         }
         .sheet(isPresented: $showGenerator) {
@@ -270,22 +271,82 @@ struct VaultListView: View {
 
     @ViewBuilder
     private var emptyState: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "tray")
-                .font(.largeTitle)
-                .foregroundStyle(.tertiary)
-            Text(searchQuery.isEmpty ? "No passwords saved yet" : "No results for \"\(searchQuery)\"")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            if searchQuery.isEmpty {
-                Button("Add your first password") {
-                    showAddItem = true
+        switch sidebarFilter {
+
+        case .all where vaultManager.vault.items.isEmpty:
+            // First time — no passwords at all
+            EmptyStateView(
+                icon: "lock.open.fill",
+                iconColor: .blue,
+                title: "Your vault is empty",
+                message: "Add your first password to get started. VaultApp will keep it safe.",
+                actionLabel: "Add Password",
+                action: { 
+                    addCategory = .login
+                    showAddItem = true 
                 }
-                .buttonStyle(.link)
-            }
+            )
+
+        case .all:
+            // Search returned nothing
+            EmptyStateView(
+                icon: "magnifyingglass",
+                iconColor: .secondary,
+                title: "No results for \"\(searchQuery)\"",
+                message: "Try a different search term, or check a specific category.",
+                actionLabel: nil,
+                action: nil
+            )
+
+        case .category(let cat) where filteredItems.isEmpty && searchQuery.isEmpty:
+            // Category has no items
+            EmptyStateView(
+                icon: cat.icon,
+                iconColor: .blue,
+                title: "No \(cat.rawValue) items",
+                message: "You haven't added any \(cat.rawValue.lowercased()) entries yet.",
+                actionLabel: "Add \(cat.rawValue)",
+                action: { 
+                    addCategory = cat
+                    showAddItem = true 
+                }
+            )
+
+        case .folder(let id) where filteredItems.isEmpty && searchQuery.isEmpty:
+            let folderName = vaultManager.vault.folder(withID: id)?.name ?? "this folder"
+            EmptyStateView(
+                icon: "folder",
+                iconColor: .blue,
+                title: "\(folderName) is empty",
+                message: "Move items here from the All Items view, or add a new password directly to this folder.",
+                actionLabel: "Add Password",
+                action: { 
+                    addCategory = .login
+                    showAddItem = true 
+                }
+            )
+
+        case .tag(let tag) where filteredItems.isEmpty && searchQuery.isEmpty:
+            EmptyStateView(
+                icon: "tag",
+                iconColor: .orange,
+                title: "No items tagged \"\(tag)\"",
+                message: "Assign this tag to items from their edit form.",
+                actionLabel: nil,
+                action: nil
+            )
+
+        default:
+            // Generic search-within-filter empty
+            EmptyStateView(
+                icon: "magnifyingglass",
+                iconColor: .secondary,
+                title: "No results for \"\(searchQuery)\"",
+                message: "Try a broader search term.",
+                actionLabel: nil,
+                action: nil
+            )
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
     }
 
     // MARK: - Toolbar
@@ -333,6 +394,7 @@ struct VaultListView: View {
             .help("Open the password generator")
 
             Button {
+                addCategory = .login
                 showAddItem = true
             } label: {
                 Label("Add Password", systemImage: "plus")

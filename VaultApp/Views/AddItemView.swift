@@ -7,6 +7,7 @@ struct AddItemView: View {
 
     // Optional: if set, we are editing; if nil, we are creating
     var existingItem: VaultItem? = nil
+    var initialCategory: VaultItem.Category = .login
 
     // MARK: - Form State
 
@@ -254,9 +255,9 @@ struct AddItemView: View {
                     }
 
                     if let err = totpError {
-                        Text(err)
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                        ErrorBannerView(message: err) {
+                            totpError = nil
+                        }
                     } else if !totpSecret.isEmpty && TOTPService.isValidSecret(totpSecret) {
                         // Show a live preview code while filling in the form
                         TOTPRowView(secret: totpSecret)
@@ -398,19 +399,22 @@ struct AddItemView: View {
     // MARK: - Logic
 
     private func prefillIfEditing() {
-        guard let item = existingItem else { return }
-        title    = item.title
-        username = item.username
-        password = item.password
-        url      = item.url
-        notes    = item.notes
-        category = item.category
-        totpSecret = item.totpSecret
-        cardFields     = item.cardFields ?? CardFields()
-        identityFields = item.identityFields ?? IdentityFields()
-        secureNoteBody = item.secureNoteBody
-        folderID = item.folderID
-        tags     = item.tags
+        if let item = existingItem {
+            title    = item.title
+            username = item.username
+            password = item.password
+            url      = item.url
+            notes    = item.notes
+            category = item.category
+            totpSecret = item.totpSecret
+            cardFields     = item.cardFields ?? CardFields()
+            identityFields = item.identityFields ?? IdentityFields()
+            secureNoteBody = item.secureNoteBody
+            folderID = item.folderID
+            tags     = item.tags
+        } else {
+            category = initialCategory
+        }
     }
 
     private func saveItem() {
