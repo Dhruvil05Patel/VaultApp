@@ -29,6 +29,13 @@ struct AddItemView: View {
     @State private var folderID: UUID? = nil
     @State private var tags: [String] = []
 
+    enum AddItemField: Hashable {
+        case title, username, password, url, notes, totp
+    }
+    @FocusState private var focusedField: AddItemField?
+
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+
     // Validation
     private var isFormValid: Bool {
         switch category {
@@ -74,7 +81,12 @@ struct AddItemView: View {
             sheetFooter
         }
         .frame(minWidth: 440, minHeight: 520)
-        .onAppear(perform: prefillIfEditing)
+        .onAppear {
+            prefillIfEditing()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                focusedField = .title
+            }
+        }
         .sheet(isPresented: $showGenerator) {
             GeneratorView { selectedPassword in
                 password = selectedPassword
@@ -144,6 +156,7 @@ struct AddItemView: View {
             formField(label: "Title", icon: "textformat") {
                 TextField("e.g. Chase Sapphire, My Profile", text: $title)
                     .textFieldStyle(.roundedBorder)
+                    .focused($focusedField, equals: .title)
             }
         }
     }
@@ -172,6 +185,7 @@ struct AddItemView: View {
             formField(label: "Title", icon: "textformat") {
                 TextField("e.g. GitHub, Netflix, Bank", text: $title)
                     .textFieldStyle(.roundedBorder)
+                    .focused($focusedField, equals: .title)
             }
 
             // Username / Email
@@ -179,6 +193,7 @@ struct AddItemView: View {
                 TextField("username@example.com", text: $username)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.username)
+                    .focused($focusedField, equals: .username)
             }
 
             // Password + Generator
@@ -193,6 +208,7 @@ struct AddItemView: View {
                     }
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
+                    .focused($focusedField, equals: .password)
 
                     // Show / hide toggle
                     Button {
@@ -203,6 +219,7 @@ struct AddItemView: View {
                     }
                     .buttonStyle(.plain)
                     .help(showPassword ? "Hide password" : "Show password")
+                    .accessibilityLabel(showPassword ? "Hide password" : "Show password")
 
                     // Generate button
                     Button {
@@ -214,6 +231,7 @@ struct AddItemView: View {
                     }
                     .buttonStyle(.plain)
                     .help("Generate a strong password")
+                    .accessibilityLabel("Generate new password")
 
                     // Open full generator sheet
                     Button {
@@ -240,6 +258,7 @@ struct AddItemView: View {
                             .textFieldStyle(.roundedBorder)
                             .font(.system(.body, design: .monospaced))
                             .autocorrectionDisabled()
+                            .focused($focusedField, equals: .totp)
                             .onChange(of: totpSecret) { _, newValue in
                                 handleTOTPChange(newValue)
                             }
@@ -288,7 +307,7 @@ struct AddItemView: View {
                 .foregroundStyle(.secondary)
                 .frame(width: 64, alignment: .trailing)
         }
-        .animation(.easeInOut, value: strength.rawValue)
+        .animation(reduceMotion ? .none : .easeInOut, value: strength.rawValue)
     }
 
     private func segmentColor(index: Int, strength: PasswordGenerator.Strength) -> Color {
@@ -318,6 +337,7 @@ struct AddItemView: View {
                 TextField("https://github.com", text: $url)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.URL)
+                    .focused($focusedField, equals: .url)
             }
 
             // Folder picker
@@ -352,6 +372,7 @@ struct AddItemView: View {
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color(NSColor.separatorColor), lineWidth: 1)
                     )
+                    .focused($focusedField, equals: .notes)
             }
         }
     }

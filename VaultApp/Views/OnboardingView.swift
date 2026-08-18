@@ -3,6 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
 
     @ObservedObject private var settings = AppSettings.shared
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     @State private var currentPage: Int = 0
 
     // Total number of onboarding pages
@@ -26,7 +27,7 @@ struct OnboardingView: View {
                     EmptyView()
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: currentPage)
+            .animation(reduceMotion ? .none : .easeInOut(duration: 0.3), value: currentPage)
             .frame(minHeight: 360)
 
             Divider()
@@ -190,7 +191,7 @@ struct OnboardingView: View {
                     Circle()
                         .fill(i == currentPage ? Color.accentColor : Color.secondary.opacity(0.3))
                         .frame(width: 7, height: 7)
-                        .animation(.easeInOut, value: currentPage)
+                        .animation(reduceMotion ? .none : .easeInOut, value: currentPage)
                 }
             }
 

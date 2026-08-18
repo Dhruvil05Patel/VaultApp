@@ -143,6 +143,7 @@ struct GeneratorView: View {
             }
             .buttonStyle(.bordered)
             .keyboardShortcut("r", modifiers: .command)
+            .accessibilityHint("Creates a new random password with the current settings")
         }
     }
 
@@ -251,6 +252,7 @@ struct GeneratorView: View {
             }
             .buttonStyle(.bordered)
             .tint(copied ? .green : .primary)
+            .keyboardShortcut("c", modifiers: .command)
 
             // "Use this password" — only shown when opened from AddItemView
             if let onUse {

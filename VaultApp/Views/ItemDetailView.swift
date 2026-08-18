@@ -111,6 +111,15 @@ struct ItemDetailView: View {
         } message: {
             Text("This action cannot be undone.")
         }
+        .background {
+            Button("") { copyToClipboard(item.password, key: "password") }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+                .opacity(0)
+            
+            Button("") { copyToClipboard(item.username, key: "username") }
+                .keyboardShortcut("u", modifiers: [.command, .shift])
+                .opacity(0)
+        }
     }
 
     // MARK: - Header
@@ -166,6 +175,8 @@ struct ItemDetailView: View {
 
             Spacer()
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(item.title), \(item.category.rawValue)")
     }
 
     // MARK: - Standard Field Row
@@ -250,6 +261,7 @@ struct ItemDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .help(showPassword ? "Hide password" : "Show password")
+                .accessibilityLabel(showPassword ? "Hide password" : "Show password")
 
                 copyButton(value: item.password, key: "password")
             }
@@ -304,6 +316,7 @@ struct ItemDetailView: View {
             }
             .buttonStyle(.bordered)
             .disabled(isCheckingBreach)
+            .accessibilityHint("Checks this password against the HaveIBeenPwned database using an anonymous hash")
 
             Text("Checks against the HaveIBeenPwned database. Only an anonymous partial hash is sent — your password never leaves this device.")
                 .font(.caption2)
@@ -366,12 +379,7 @@ struct ItemDetailView: View {
     @ViewBuilder
     private func copyButton(value: String, key: String) -> some View {
         Button {
-            ClipboardService.copy(value)
-            withAnimation { copiedField = key }
-            // Reset the checkmark icon after 2s
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                withAnimation { copiedField = nil }
-            }
+            copyToClipboard(value, key: key)
         } label: {
             Image(systemName: copiedField == key ? "checkmark" : "doc.on.doc")
                 .foregroundStyle(copiedField == key ? .green : .secondary)
@@ -379,9 +387,18 @@ struct ItemDetailView: View {
         }
         .buttonStyle(.plain)
         .help("Copy to clipboard")
+        .accessibilityLabel("Copy \(key)")
     }
 
     // MARK: - Helpers
+
+    private func copyToClipboard(_ value: String, key: String) {
+        ClipboardService.copy(value)
+        withAnimation { copiedField = key }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { copiedField = nil }
+        }
+    }
 
     private func checkBreach() {
         isCheckingBreach = true

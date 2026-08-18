@@ -4,7 +4,7 @@ struct VaultCommands: Commands {
     var body: some Commands {
 
         // MARK: File Menu additions
-        CommandGroup(after: .newItem) {
+        CommandGroup(replacing: .newItem) {
             Button("New Password Entry") {
                 NotificationCenter.default.post(name: .addNewItem, object: nil)
             }
