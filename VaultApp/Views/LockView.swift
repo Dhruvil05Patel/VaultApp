@@ -9,7 +9,8 @@ struct LockView: View {
     @State private var confirmPassword: String = ""
     @State private var showPassword: Bool = false
     @State private var hasFailedOnce: Bool = false
-    @FocusState private var passwordFieldFocused: Bool
+    enum LockField: Hashable { case password, confirm }
+    @FocusState private var focusedField: LockField?
 
     // Computed: are we creating a new vault or unlocking an existing one?
     private var isCreatingVault: Bool {
@@ -74,14 +75,16 @@ struct LockView: View {
                     passwordField(
                         label: "Master Password",
                         text: $masterPassword,
-                        show: showPassword
+                        show: showPassword,
+                        field: .password
                     )
 
                     if isCreatingVault {
                         passwordField(
                             label: "Confirm Password",
                             text: $confirmPassword,
-                            show: showPassword
+                            show: showPassword,
+                            field: .confirm
                         )
 
                         // Password match feedback
@@ -186,6 +189,7 @@ struct LockView: View {
                         .controlSize(.large)
                         .frame(maxWidth: 360)
                         .disabled(vaultManager.isLoading || isAuthenticating)
+                        .accessibilityHint("Uses your fingerprint to unlock the vault without entering your password")
                     }
                     .padding(.top, 8)
                 }
@@ -197,7 +201,9 @@ struct LockView: View {
         .onAppear {
             print("[LOCKVIEW] onAppear, isCreatingVault = \(isCreatingVault), authenticationState = \(vaultManager.authenticationState)")
             vaultManager.clearError()
-            passwordFieldFocused = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                focusedField = .password
+            }
         }
         .onChange(of: vaultManager.errorMessage) { _, newError in
             if newError != nil {
@@ -209,7 +215,7 @@ struct LockView: View {
     // MARK: - Subviews
 
     @ViewBuilder
-    private func passwordField(label: String, text: Binding<String>, show: Bool) -> some View {
+    private func passwordField(label: String, text: Binding<String>, show: Bool, field: LockField) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.caption)
@@ -223,7 +229,14 @@ struct LockView: View {
                 }
             }
             .textFieldStyle(.roundedBorder)
-            .focused($passwordFieldFocused)
+            .focused($focusedField, equals: field)
+            .onSubmit {
+                if isCreatingVault && field == .password {
+                    focusedField = .confirm
+                } else {
+                    primaryAction()
+                }
+            }
         }
     }
 

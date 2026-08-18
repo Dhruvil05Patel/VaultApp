@@ -11,6 +11,7 @@ struct TOTPRowView: View {
     @State private var secondsRemaining: Int = 30
     @State private var copied: Bool = false
     @State private var error: String? = nil
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     // Refresh every second
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -31,7 +32,7 @@ struct TOTPRowView: View {
                         .trim(from: 0, to: CGFloat(secondsRemaining) / 30.0)
                         .stroke(ringColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 1), value: secondsRemaining)
+                        .animation(reduceMotion ? .none : .linear(duration: 1), value: secondsRemaining)
                     Text("\(secondsRemaining)")
                         .font(.system(size: 9, weight: .semibold, design: .monospaced))
                         .foregroundStyle(ringColor)

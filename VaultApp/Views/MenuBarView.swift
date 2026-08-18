@@ -5,7 +5,9 @@ struct MenuBarView: View {
     @EnvironmentObject var vaultManager: VaultManager
     @State private var searchQuery: String = ""
     @State private var masterPassword: String = ""
-    @FocusState private var searchFieldFocused: Bool
+
+    enum MenuBarField: Hashable { case search, password }
+    @FocusState private var focusedField: MenuBarField?
 
     private var filteredItems: [VaultItem] {
         guard !searchQuery.isEmpty else {
@@ -42,12 +44,16 @@ struct MenuBarView: View {
         }
         .background(Color(NSColor.windowBackgroundColor))
         .onAppear {
-            if vaultManager.isUnlocked { searchFieldFocused = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                focusedField = vaultManager.isUnlocked ? .search : .password
+            }
         }
         .onChange(of: vaultManager.isUnlocked) { _, unlocked in
             searchQuery = ""
             masterPassword = ""
-            if unlocked { searchFieldFocused = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                focusedField = unlocked ? .search : .password
+            }
         }
     }
 
@@ -95,6 +101,7 @@ struct MenuBarView: View {
 
             SecureField("Master password", text: $masterPassword)
                 .textFieldStyle(.roundedBorder)
+                .focused($focusedField, equals: .password)
                 .onSubmit { quickUnlock() }
                 .padding(.horizontal, 14)
 
@@ -127,7 +134,7 @@ struct MenuBarView: View {
                 )
                 .textFieldStyle(.plain)
                 .font(.callout)
-                .focused($searchFieldFocused)
+                .focused($focusedField, equals: .search)
                 if !searchQuery.isEmpty {
                     Button { searchQuery = "" } label: {
                         Image(systemName: "xmark.circle.fill")

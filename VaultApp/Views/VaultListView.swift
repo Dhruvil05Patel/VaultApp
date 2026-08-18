@@ -30,6 +30,10 @@ struct VaultListView: View {
     @State private var showBulkBreachCheck: Bool = false
     @State private var showImport: Bool = false
     @State private var showExport: Bool = false
+    @State private var showDeleteConfirmForID: UUID? = nil
+
+    @FocusState private var searchFocused: Bool
+    @FocusState private var listFocused: Bool
 
     // MARK: - Filtered Items
 
@@ -61,6 +65,13 @@ struct VaultListView: View {
             detailContent
         }
         .searchable(text: $searchQuery, prompt: "Search passwords…")
+        .onChange(of: vaultManager.isUnlocked) { _, isUnlocked in
+            if isUnlocked {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    searchFocused = true
+                }
+            }
+        }
         .toolbar { toolbarContent }
         .sheet(isPresented: $showAddItem) {
             AddItemView(initialCategory: addCategory)  // Built in Task 09
@@ -90,6 +101,26 @@ struct VaultListView: View {
                 TagRenameView(oldTag: tag)
                     .environmentObject(vaultManager)
             }
+        }
+        .onKeyPress(.delete) {
+            guard let id = selectedItemID else { return .ignored }
+            showDeleteConfirmForID = id
+            return .handled
+        }
+        .confirmationDialog(
+            "Delete this item?",
+            isPresented: Binding(get: { showDeleteConfirmForID != nil },
+                                 set: { if !$0 { showDeleteConfirmForID = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                if let id = showDeleteConfirmForID {
+                    vaultManager.deleteItem(id: id)
+                    selectedItemID = nil
+                    listFocused = true
+                }
+            }
+            Button("Cancel", role: .cancel) { showDeleteConfirmForID = nil }
         }
     }
 
@@ -224,6 +255,7 @@ struct VaultListView: View {
         }
         .listStyle(.sidebar)
         .frame(minWidth: 240)
+        .focused($listFocused)
     }
 
     // MARK: - Sidebar Row
@@ -361,6 +393,7 @@ struct VaultListView: View {
                 Label("Lock Vault", systemImage: "lock.fill")
             }
             .help("Lock the vault and return to the lock screen")
+            .accessibilityHint("Returns to the password entry screen")
         }
 
         // Right side — add + generator
@@ -385,6 +418,7 @@ struct VaultListView: View {
                 Label("Check All for Breaches", systemImage: "shield.lefthalf.filled")
             }
             .help("Check all passwords against the HaveIBeenPwned database")
+            .accessibilityHint("Checks all passwords against the HaveIBeenPwned database using an anonymous hash")
 
             Button {
                 showGenerator = true
@@ -450,6 +484,9 @@ struct VaultItemRow: View {
             Spacer()
         }
         .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(item.title), \(item.category.rawValue), \(item.username)")
+        .accessibilityHint("Double-tap to view details")
     }
 
     private var subtitleText: String {

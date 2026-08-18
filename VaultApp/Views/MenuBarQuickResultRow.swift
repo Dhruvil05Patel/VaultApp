@@ -38,6 +38,8 @@ struct MenuBarQuickResultRow: View {
                 // Expand for more actions
                 Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                     .font(.caption2).foregroundStyle(.tertiary)
+                    .accessibilityLabel(isExpanded ? "Collapse" : "Expand actions")
+                    .accessibilityAddTraits(.isButton)
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
             .contentShape(Rectangle())
@@ -89,6 +91,7 @@ struct MenuBarQuickResultRow: View {
         }
         .buttonStyle(.plain)
         .help(help)
+        .accessibilityLabel(help)
     }
 
     @ViewBuilder
@@ -105,6 +108,7 @@ struct MenuBarQuickResultRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 
     private func autoClearCopied() {
