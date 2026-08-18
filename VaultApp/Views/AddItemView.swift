@@ -254,9 +254,9 @@ struct AddItemView: View {
                     }
 
                     if let err = totpError {
-                        Text(err)
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                        ErrorBannerView(message: err) {
+                            totpError = nil
+                        }
                     } else if !totpSecret.isEmpty && TOTPService.isValidSecret(totpSecret) {
                         // Show a live preview code while filling in the form
                         TOTPRowView(secret: totpSecret)

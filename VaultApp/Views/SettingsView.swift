@@ -49,15 +49,30 @@ struct SettingsView: View {
 
                 // Sync status display
                 if settings.iCloudSyncEnabled {
-                    HStack(spacing: 6) {
-                        Image(systemName: syncService.syncStatus.icon)
-                            .foregroundStyle(.secondary)
-                        Text(syncService.syncStatus.description)
-                            .font(.callout).foregroundStyle(.secondary)
-                        Spacer()
-                        if let date = syncService.lastSyncDate {
-                            Text("Last synced \(date.formatted(.relative(presentation: .named)))")
-                                .font(.caption).foregroundStyle(.tertiary)
+                    if case .error(let message) = syncService.syncStatus {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "exclamationmark.icloud.fill")
+                                .foregroundStyle(.red)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(message)
+                                    .font(.caption).foregroundStyle(.red)
+                                if message.contains("iCloud") || message.contains("sign in") {
+                                    Text("Go to System Settings → Apple ID → iCloud to fix this.")
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    } else {
+                        HStack(spacing: 6) {
+                            Image(systemName: syncService.syncStatus.icon)
+                                .foregroundStyle(.secondary)
+                            Text(syncService.syncStatus.description)
+                                .font(.callout).foregroundStyle(.secondary)
+                            Spacer()
+                            if let date = syncService.lastSyncDate {
+                                Text("Last synced \(date.formatted(.relative(presentation: .named)))")
+                                    .font(.caption).foregroundStyle(.tertiary)
+                            }
                         }
                     }
                 }
