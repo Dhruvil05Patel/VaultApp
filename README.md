@@ -46,28 +46,29 @@ The app is designed as a learning project and personal tool — something you bu
 ## Features
 
 ### Implemented
-- [ ] Lock screen with master password entry
-- [ ] AES-256-GCM encrypted vault file
-- [ ] Key derivation from master password using PBKDF2-SHA256
-- [ ] List of all saved passwords
-- [ ] Add / Edit / Delete vault entries
-- [ ] Copy username and password to clipboard
-- [ ] Auto-clear clipboard after 30 seconds
-- [ ] Password generator (length, symbols, numbers)
-- [ ] Auto-lock on screen sleep or inactivity
+- [x] Lock screen with master password entry
+- [x] AES-256-GCM encrypted vault file
+- [x] Key derivation from master password using PBKDF2-SHA256
+- [x] List of all saved passwords
+- [x] Add / Edit / Delete vault entries
+- [x] Copy username and password to clipboard
+- [x] Auto-clear clipboard after 30 seconds
+- [x] Password generator (length, symbols, numbers)
+- [x] Auto-lock on screen sleep or inactivity
+- [x] Touch ID / Biometric unlock
+- [x] TOTP / 2FA code generator (RFC 6238)
+- [x] Secure notes, credit card, and identity templates
+- [x] Import/Export from 1Password / Bitwarden (CSV)
+- [x] iCloud Sync with client-side encryption
+- [x] Tags and folders for organization
+- [x] Password strength indicator
+- [x] Breach detection via HaveIBeenPwned API (k-anonymity model)
+- [x] Menu bar quick-access widget
+- [x] True P2P Offline Sync (Bonjour / Network Framework)
+- [x] Geo-Fenced Access Control (Location Lock for folders)
 
 ### Planned
-- [ ] Touch ID / Face ID (Biometric unlock)
 - [ ] Browser autofill via `ASCredentialProviderExtension`
-- [ ] TOTP / 2FA code generator (RFC 6238)
-- [ ] Secure notes category
-- [ ] Credit card and identity templates
-- [ ] Import from 1Password / Bitwarden (CSV)
-- [ ] iCloud Sync with client-side encryption
-- [ ] Tags and folders for organization
-- [ ] Password strength indicator
-- [ ] Breach detection via HaveIBeenPwned API (k-anonymity model)
-- [ ] Menu bar quick-access widget
 
 ---
 
@@ -309,30 +310,34 @@ The `Vault` struct is serialised to JSON, then that JSON is encrypted and writte
 
 ## Roadmap
 
-### v0.1 — Core (current)
-- Lock screen
-- Add / view / delete passwords
-- AES-GCM encrypted vault file
-- Password generator
+### v0.1 — Core
+- [x] Lock screen
+- [x] Add / view / delete passwords
+- [x] AES-GCM encrypted vault file
+- [x] Password generator
 
 ### v0.2 — Polish
-- Touch ID unlock
-- Search and filter
-- Password strength meter
-- Auto-lock timeout settings
-- Clipboard auto-clear
+- [x] Touch ID unlock
+- [x] Search and filter
+- [x] Password strength meter
+- [x] Auto-lock timeout settings
+- [x] Clipboard auto-clear
 
 ### v0.3 — Power Features
-- TOTP/2FA code generator
-- Secure notes and credit card templates
-- Import from 1Password / Bitwarden CSV
-- Menu bar quick access
+- [x] TOTP/2FA code generator
+- [x] Secure notes and credit card templates
+- [x] Import from 1Password / Bitwarden CSV
+- [x] Menu bar quick access
 
-### v1.0 — Production Ready
-- Browser autofill extension
-- iCloud Sync (client-side encrypted)
-- Breach detection (HaveIBeenPwned)
-- App Store distribution
+### v1.0 — Production Ready (current)
+- [x] iCloud Sync (client-side encrypted)
+- [x] Breach detection (HaveIBeenPwned)
+- [x] True P2P Offline Sync
+- [x] Geo-Fenced Access Control (Location Lock)
+
+### v1.1 — Future
+- [ ] Browser autofill extension
+- [ ] App Store distribution
 
 ---
 
