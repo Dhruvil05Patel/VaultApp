@@ -20,6 +20,19 @@ struct VaultFolder: Codable, Identifiable, Hashable {
     var color: Color {
         Color(hex: colorHex) ?? .blue
     }
+
+    var geofence: Geofence? = nil
+
+    // Convenience:
+    var isGeofenced: Bool { geofence != nil }
+}
+
+struct Geofence: Codable, Hashable {
+    let id: UUID
+    var name: String           // e.g. "Office", "Home"
+    var latitude: Double
+    var longitude: Double
+    var radiusMeters: Double   // e.g. 200.0 for 200m radius
 }
 
 // MARK: - Color from hex (extension)
