@@ -9,6 +9,7 @@ struct FolderManageView: View {
 
     @State private var name: String = ""
     @State private var colorHex: String = "#4A90D9"
+    @State private var showGeofenceSetup: Bool = false
 
     private let presetColors: [String] = [
         "#4A90D9", "#E74C3C", "#2ECC71", "#F39C12",
@@ -18,7 +19,7 @@ struct FolderManageView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(folder == nil ? "New Folder" : "Rename Folder")
+                Text(folder == nil ? "New Folder" : "Edit Folder")
                     .font(.headline)
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.escape, modifiers: [])
@@ -57,6 +58,22 @@ struct FolderManageView: View {
                         .foregroundStyle(name.isEmpty ? .tertiary : .primary)
                 }
                 .font(.callout)
+
+                if let existingFolder = folder {
+                    Divider()
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Location Lock")
+                            Text(existingFolder.isGeofenced ? "Active" : "Not configured")
+                                .font(.caption)
+                                .foregroundStyle(existingFolder.isGeofenced ? .green : .secondary)
+                        }
+                        Spacer()
+                        Button(existingFolder.isGeofenced ? "Edit…" : "Set Up…") {
+                            showGeofenceSetup = true
+                        }
+                    }
+                }
             }
             .padding(24)
 
@@ -76,6 +93,12 @@ struct FolderManageView: View {
         .frame(width: 360)
         .onAppear {
             if let f = folder { name = f.name; colorHex = f.colorHex }
+        }
+        .sheet(isPresented: $showGeofenceSetup) {
+            if let existingFolder = folder {
+                GeofenceSetupView(folder: existingFolder)
+                    .environmentObject(vaultManager)
+            }
         }
     }
 

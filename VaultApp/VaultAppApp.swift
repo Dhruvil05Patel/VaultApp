@@ -28,6 +28,7 @@ struct VaultAppApp: App {
                         SyncService.shared.start()
                     }
                     MenuBarManager.shared.setup()
+                    GeofenceService.shared.startMonitoring()
                 }
         }
         .windowStyle(.titleBar)

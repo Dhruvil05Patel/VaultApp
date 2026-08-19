@@ -12,14 +12,24 @@ struct VaultListView: View {
         case tag(String)
     }
 
+    enum FolderSheet: Identifiable {
+        case new
+        case edit(VaultFolder)
+        var id: String {
+            switch self {
+            case .new: return "new"
+            case .edit(let f): return f.id.uuidString
+            }
+        }
+    }
+
     // Search and filter state
     @State private var searchQuery: String = ""
     @State private var sidebarFilter: SidebarFilter = .all
     @State private var selectedItemID: UUID? = nil
 
     // Folder / tag management state
-    @State private var showFolderManager: Bool = false
-    @State private var folderToEdit: VaultFolder? = nil
+    @State private var folderSheet: FolderSheet? = nil
     @State private var tagToManage: String? = nil
     @State private var showTagRename: Bool = false
 
@@ -54,6 +64,19 @@ struct VaultListView: View {
             }
         }
         return base.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    private var geoFilteredItems: [VaultItem] {
+        let items = filteredItems
+        return items.filter { item in
+            // If item is in a geofenced folder and we're outside that zone, hide it
+            if let folderID = item.folderID,
+               let folder = vaultManager.vault.folder(withID: folderID),
+               let geofence = folder.geofence {
+                return GeofenceService.shared.isInside(geofence)
+            }
+            return true  // no geofence = always visible
+        }
     }
 
     // MARK: - Body
@@ -92,9 +115,15 @@ struct VaultListView: View {
             ExportView()
                 .environmentObject(vaultManager)
         }
-        .sheet(isPresented: $showFolderManager) {
-            FolderManageView(folder: folderToEdit)
-                .environmentObject(vaultManager)
+        .sheet(item: $folderSheet) { sheet in
+            switch sheet {
+            case .new:
+                FolderManageView(folder: nil)
+                    .environmentObject(vaultManager)
+            case .edit(let folder):
+                FolderManageView(folder: folder)
+                    .environmentObject(vaultManager)
+            }
         }
         .sheet(isPresented: $showTagRename) {
             if let tag = tagToManage {
@@ -152,12 +181,15 @@ struct VaultListView: View {
                         icon: "folder.fill",
                         iconColor: folder.color,
                         count: vaultManager.vault.items(inFolder: folder.id).count,
-                        isSelected: sidebarFilter == .folder(folder.id)
+                        isSelected: sidebarFilter == .folder(folder.id),
+                        folder: folder
                     ) {
                         sidebarFilter = .folder(folder.id)
                     }
                     .contextMenu {
-                        Button("Rename…") { folderToEdit = folder; showFolderManager = true }
+                        Button("Edit Folder…") { 
+                            folderSheet = .edit(folder)
+                        }
                         Button("Delete", role: .destructive) {
                             vaultManager.deleteFolder(id: folder.id)
                             if sidebarFilter == .folder(folder.id) { sidebarFilter = .all }
@@ -165,7 +197,7 @@ struct VaultListView: View {
                     }
                 }
                 Button {
-                    showFolderManager = true; folderToEdit = nil
+                    folderSheet = .new
                 } label: {
                     Label("New Folder…", systemImage: "folder.badge.plus")
                         .foregroundStyle(.blue)
@@ -200,10 +232,10 @@ struct VaultListView: View {
 
             // Vault items
             Section {
-                if filteredItems.isEmpty {
+                if geoFilteredItems.isEmpty {
                     emptyState
                 } else {
-                    ForEach(filteredItems) { item in
+                    ForEach(geoFilteredItems) { item in
                         VaultItemRow(item: item)
                             .tag(item.id)
                             .contextMenu {
@@ -248,7 +280,7 @@ struct VaultListView: View {
                     }
                 }
             } header: {
-                Text("Items (\(filteredItems.count))")
+                Text("Items (\(geoFilteredItems.count))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -265,10 +297,19 @@ struct VaultListView: View {
                             iconColor: Color = .accentColor,
                             count: Int? = nil,
                             isSelected: Bool,
+                            folder: VaultFolder? = nil,
                             action: @escaping () -> Void) -> some View {
         HStack {
             Image(systemName: icon).foregroundStyle(iconColor).frame(width: 20)
             Text(label).lineLimit(1)
+            
+            if let folder = folder, let geofence = folder.geofence {
+                let inside = GeofenceService.shared.isInside(geofence)
+                Image(systemName: inside ? "location.fill" : "location.slash.fill")
+                    .font(.caption2)
+                    .foregroundStyle(inside ? .green : .red)
+            }
+            
             Spacer()
             if let count { Text("\(count)").foregroundStyle(.tertiary).font(.caption) }
         }
@@ -330,7 +371,7 @@ struct VaultListView: View {
                 action: nil
             )
 
-        case .category(let cat) where filteredItems.isEmpty && searchQuery.isEmpty:
+        case .category(let cat) where geoFilteredItems.isEmpty && searchQuery.isEmpty:
             // Category has no items
             EmptyStateView(
                 icon: cat.icon,
@@ -344,7 +385,7 @@ struct VaultListView: View {
                 }
             )
 
-        case .folder(let id) where filteredItems.isEmpty && searchQuery.isEmpty:
+        case .folder(let id) where geoFilteredItems.isEmpty && searchQuery.isEmpty:
             let folderName = vaultManager.vault.folder(withID: id)?.name ?? "this folder"
             EmptyStateView(
                 icon: "folder",
@@ -358,7 +399,7 @@ struct VaultListView: View {
                 }
             )
 
-        case .tag(let tag) where filteredItems.isEmpty && searchQuery.isEmpty:
+        case .tag(let tag) where geoFilteredItems.isEmpty && searchQuery.isEmpty:
             EmptyStateView(
                 icon: "tag",
                 iconColor: .orange,

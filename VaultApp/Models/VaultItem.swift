@@ -34,6 +34,9 @@ struct VaultItem: Codable, Identifiable, Hashable {
     // When the password was last changed
     var lastPasswordChangedAt: Date? = nil
 
+    // Items can be individually geofenced regardless of folder
+    var geofenceRestricted: Bool = false
+
     // Convenience: Days since the password was last changed
     var passwordAge: Int? {
         guard let date = lastPasswordChangedAt else { return nil }
@@ -92,7 +95,7 @@ struct VaultItem: Codable, Identifiable, Hashable {
     private enum CodingKeys: String, CodingKey {
         case id, title, username, password, url, notes
         case cardFields, identityFields, secureNoteBody, totpSecret
-        case folderID, tags, lastPasswordChangedAt
+        case folderID, tags, lastPasswordChangedAt, geofenceRestricted
         case createdAt, updatedAt, category
         case breachStatus, breachCount, breachCheckedAt
     }
@@ -112,6 +115,7 @@ struct VaultItem: Codable, Identifiable, Hashable {
         folderID = try c.decodeIfPresent(UUID.self, forKey: .folderID)
         tags     = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
         lastPasswordChangedAt = try c.decodeIfPresent(Date.self, forKey: .lastPasswordChangedAt)
+        geofenceRestricted = try c.decodeIfPresent(Bool.self, forKey: .geofenceRestricted) ?? false
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         updatedAt = try c.decode(Date.self, forKey: .updatedAt)
         category  = try c.decode(Category.self, forKey: .category)
