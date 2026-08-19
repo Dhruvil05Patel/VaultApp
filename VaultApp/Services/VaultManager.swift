@@ -530,6 +530,37 @@ final class VaultManager: ObservableObject {
         }
     }
 
+    // MARK: - P2P Sync
+
+    // Export the current encrypted vault blob for P2P transfer.
+    // Returns nil if vault is locked.
+    func exportEncryptedBlobForP2P() -> Data? {
+        guard let key = symmetricKey,
+              let data = try? EncryptionService.encryptVault(vault, using: key) else { return nil }
+        return data
+    }
+
+    // Import an encrypted vault blob received from a P2P peer.
+    // Uses the current in-memory key (same master password assumption).
+    func importEncryptedBlobFromP2P(_ data: Data) throws {
+        guard let key = symmetricKey else {
+            throw NSError(domain: "VaultManager", code: 30,
+                          userInfo: [NSLocalizedDescriptionKey: "Vault must be unlocked to import."])
+        }
+        let received = try EncryptionService.decryptVault(data, using: key)
+        // Merge: keep items from both, newest updatedAt wins per UUID
+        for item in received.items {
+            if let existing = vault.item(withId: item.id) {
+                if item.updatedAt > existing.updatedAt {
+                    vault.update(item)
+                }
+            } else {
+                vault.add(item)
+            }
+        }
+        try saveVault()
+    }
+
     private func userFacingError(_ error: Error) -> String {
         // Map known error types to friendly messages
         if let cryptoError = error as? EncryptionService.CryptoError {
