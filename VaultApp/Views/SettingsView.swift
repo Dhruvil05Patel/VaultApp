@@ -179,6 +179,30 @@ struct SettingsView: View {
                 Text("Menu Bar")
             }
 
+            // MARK: Advanced Security Section
+            if VaultManager.shared.isUnlocked && !VaultManager.shared.isDuressMode {
+                Section {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Decoy Vault")
+                            Text(VaultManager.shared.duressVaultExists
+                                 ? "Active — a secondary vault opens with your decoy password"
+                                 : "Set up a secondary vault that opens with a different password")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: VaultManager.shared.duressVaultExists
+                              ? "checkmark.shield.fill" : "shield")
+                            .foregroundStyle(VaultManager.shared.duressVaultExists ? .green : .secondary)
+                    }
+                    Button("Configure Decoy Vault…") {
+                        showDuressSetup = true
+                    }
+                } header: {
+                    Text("Advanced Security")
+                }
+            }
+
             // MARK: Developer Section
             #if DEBUG
             Section("Developer") {
@@ -223,12 +247,16 @@ struct SettingsView: View {
         } message: {
             Text(biometricError ?? "Unknown error")
         }
+        .sheet(isPresented: $showDuressSetup) {
+            DuressModeSetupView().environmentObject(VaultManager.shared)
+        }
     }
 
     // MARK: - Helpers
 
     @State private var showUnlockRequiredAlert: Bool = false
     @State private var biometricError: String? = nil
+    @State private var showDuressSetup: Bool = false
 
     private var biometricBinding: Binding<Bool> {
         Binding(

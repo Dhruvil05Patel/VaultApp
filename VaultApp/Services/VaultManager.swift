@@ -55,6 +55,26 @@ final class VaultManager: ObservableObject {
         appSupportURL.appendingPathComponent("vault.salt")
     }
 
+    // MARK: - Duress Vault Paths
+
+    private var duressVaultURL: URL {
+        appSupportURL.appendingPathComponent("duress.enc")
+    }
+
+    private var duressSaltURL: URL {
+        appSupportURL.appendingPathComponent("duress.salt")
+    }
+
+    // MARK: - Duress State
+
+    // Never expose this publicly — the UI should never branch on isDuressMode
+    // except for the Settings duress setup screen (only accessible from the real vault)
+    private(set) var isDuressMode: Bool = false
+
+    var duressVaultExists: Bool {
+        FileManager.default.fileExists(atPath: duressVaultURL.path)
+    }
+
     // MARK: - Vault Existence Check
 
     // True if a vault file already exists on disk (i.e. user has set a master password before)
@@ -106,36 +126,59 @@ final class VaultManager: ObservableObject {
 
     // MARK: - Unlock Vault
 
-    // Called when the user enters their master password on the lock screen.
-    // Derives the key from the password + stored salt, then decrypts the vault file.
     func unlock(masterPassword: String) {
-        print("[UNLOCK] unlock(password) CALLED, authenticationState = \(authenticationState)")
         isLoading = true
         errorMessage = nil
 
         Task {
-            do {
-                let salt = try Data(contentsOf: saltFileURL)
-                let key = try EncryptionService.deriveKey(from: masterPassword, salt: salt)
-                let encryptedData = try Data(contentsOf: vaultFileURL)
-                let decryptedVault = try EncryptionService.decryptVault(encryptedData, using: key)
-
-                self.symmetricKey = key
-                self.vault = decryptedVault
+            // Try real vault first
+            if let result = try? await attemptUnlock(
+                password: masterPassword,
+                vaultURL: vaultFileURL,
+                saltURL: saltFileURL
+            ) {
+                self.symmetricKey = result.key
+                self.vault = result.vault
+                self.isDuressMode = false
                 self.authenticationState = .unlocked
-                print("[UNLOCK] authenticationState -> unlocked")
-
-                // Pull any newer vault synced from another Mac
+                
                 Task {
                     await self.syncService?.downloadAndMerge()
                 }
-            } catch {
-                // Show a generic error — don't reveal whether the file or the password is wrong
-                self.errorMessage = "Incorrect password. Try again, or restore from a backup if you think the vault is corrupted."
-                print("[UNLOCK] ERROR: \(error)")
+                self.isLoading = false
+                return
             }
+
+            // Try duress vault if it exists
+            if duressVaultExists,
+               let result = try? await attemptUnlock(
+                password: masterPassword,
+                vaultURL: duressVaultURL,
+                saltURL: duressSaltURL
+               ) {
+                self.symmetricKey = result.key
+                self.vault = result.vault
+                self.isDuressMode = true
+                self.authenticationState = .unlocked
+                self.isLoading = false
+                return
+            }
+
+            // Neither matched
+            self.errorMessage = "Incorrect password. Try again, or restore from a backup if you think the vault is corrupted."
             self.isLoading = false
         }
+    }
+
+    // Shared unlock attempt helper
+    private struct UnlockResult { let key: SymmetricKey; let vault: Vault }
+
+    private func attemptUnlock(password: String, vaultURL: URL, saltURL: URL) async throws -> UnlockResult {
+        let salt          = try Data(contentsOf: saltURL)
+        let key           = try EncryptionService.deriveKey(from: password, salt: salt)
+        let encryptedData = try Data(contentsOf: vaultURL)
+        let vault         = try EncryptionService.decryptVault(encryptedData, using: key)
+        return UnlockResult(key: key, vault: vault)
     }
 
     // MARK: - Lock Vault
@@ -143,14 +186,11 @@ final class VaultManager: ObservableObject {
     // Clears the key and vault from memory. The encrypted file on disk is untouched.
     // NEVER invokes biometric authentication - locking must be immediate and silent.
     func lock() {
-        print("[LOCK] lock() CALLED")
-        print(Thread.callStackSymbols.joined(separator: "\n"))
-        print("[LOCK] authenticationState BEFORE = \(authenticationState)")
         symmetricKey = nil
         vault = Vault()
         authenticationState = .locked
+        isDuressMode = false
         errorMessage = nil
-        print("[LOCK] authenticationState AFTER = \(authenticationState)")
     }
 
     // MARK: - Save Vault to Disk
@@ -163,11 +203,14 @@ final class VaultManager: ObservableObject {
                           userInfo: [NSLocalizedDescriptionKey: "Vault is locked — cannot save."])
         }
         let encryptedData = try EncryptionService.encryptVault(vault, using: key)
-        try encryptedData.write(to: vaultFileURL)
+        let targetURL = isDuressMode ? duressVaultURL : vaultFileURL
+        try encryptedData.write(to: targetURL)
 
-        // Upload to iCloud after local save
-        Task {
-            await syncService?.uploadVault()
+        if !isDuressMode {
+            // Upload to iCloud after local save (only for real vault)
+            Task {
+                await syncService?.uploadVault()
+            }
         }
     }
 
@@ -177,7 +220,8 @@ final class VaultManager: ObservableObject {
     // Called by SyncService after a remote iCloud change downloads a newer vault.
     func reloadFromDisk() async {
         guard let key = symmetricKey else { return }
-        guard let encryptedData = try? Data(contentsOf: vaultFileURL) else { return }
+        let targetURL = isDuressMode ? duressVaultURL : vaultFileURL
+        guard let encryptedData = try? Data(contentsOf: targetURL) else { return }
         if let updated = try? EncryptionService.decryptVault(encryptedData, using: key) {
             vault = updated
         }
@@ -253,6 +297,31 @@ final class VaultManager: ObservableObject {
 
     func clearError() {
         errorMessage = nil
+    }
+
+    // MARK: - Create Duress Vault
+
+    func createDuressVault(duressPassword: String) async throws {
+        guard !isDuressMode else {
+            throw NSError(domain: "VaultManager", code: 20,
+                          userInfo: [NSLocalizedDescriptionKey: "Cannot create duress vault from duress mode."])
+        }
+        try ensureAppDirectoryExists()
+        let salt = EncryptionService.generateSalt()
+        let key  = try EncryptionService.deriveKey(from: duressPassword, salt: salt)
+        let emptyVault = Vault()
+        let encrypted  = try EncryptionService.encryptVault(emptyVault, using: key)
+        try salt.write(to: duressSaltURL)
+        try encrypted.write(to: duressVaultURL)
+        AppSettings.shared.isDuressModeEnabled = true
+    }
+
+    // MARK: - Delete Duress Vault
+
+    func deleteDuressVault() {
+        try? FileManager.default.removeItem(at: duressVaultURL)
+        try? FileManager.default.removeItem(at: duressSaltURL)
+        AppSettings.shared.isDuressModeEnabled = false
     }
 
     // MARK: - Biometric Support

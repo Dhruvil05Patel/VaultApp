@@ -45,6 +45,10 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(showMenuBarIcon, forKey: "showMenuBarIcon") }
     }
 
+    @Published var isDuressModeEnabled: Bool {
+        didSet { UserDefaults.standard.set(isDuressModeEnabled, forKey: "isDuressModeEnabled") }
+    }
+
     @Published var hasCompletedOnboarding: Bool {
         didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
@@ -59,6 +63,7 @@ final class AppSettings: ObservableObject {
         self.hasAnsweredBiometricPrompt = UserDefaults.standard.object(forKey: "hasAnsweredBiometricPrompt") as? Bool ?? false
         self.iCloudSyncEnabled    = UserDefaults.standard.object(forKey: "iCloudSyncEnabled") as? Bool ?? false
         self.showMenuBarIcon      = UserDefaults.standard.object(forKey: "showMenuBarIcon") as? Bool ?? true
+        self.isDuressModeEnabled  = UserDefaults.standard.bool(forKey: "isDuressModeEnabled")
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     }
 }
