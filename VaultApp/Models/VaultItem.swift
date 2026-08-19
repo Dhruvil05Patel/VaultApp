@@ -31,6 +31,15 @@ struct VaultItem: Codable, Identifiable, Hashable {
     // List of tag strings, lowercase, no duplicates
     var tags: [String] = []
 
+    // When the password was last changed
+    var lastPasswordChangedAt: Date? = nil
+
+    // Convenience: Days since the password was last changed
+    var passwordAge: Int? {
+        guard let date = lastPasswordChangedAt else { return nil }
+        return Calendar.current.dateComponents([.day], from: date, to: Date()).day
+    }
+
     // Convenience — true when a non-empty TOTP secret is stored
     var hasTOTP: Bool { !totpSecret.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -83,7 +92,7 @@ struct VaultItem: Codable, Identifiable, Hashable {
     private enum CodingKeys: String, CodingKey {
         case id, title, username, password, url, notes
         case cardFields, identityFields, secureNoteBody, totpSecret
-        case folderID, tags
+        case folderID, tags, lastPasswordChangedAt
         case createdAt, updatedAt, category
         case breachStatus, breachCount, breachCheckedAt
     }
@@ -102,6 +111,7 @@ struct VaultItem: Codable, Identifiable, Hashable {
         totpSecret     = try c.decodeIfPresent(String.self, forKey: .totpSecret) ?? ""
         folderID = try c.decodeIfPresent(UUID.self, forKey: .folderID)
         tags     = try c.decodeIfPresent([String].self, forKey: .tags) ?? []
+        lastPasswordChangedAt = try c.decodeIfPresent(Date.self, forKey: .lastPasswordChangedAt)
         createdAt = try c.decode(Date.self, forKey: .createdAt)
         updatedAt = try c.decode(Date.self, forKey: .updatedAt)
         category  = try c.decode(Category.self, forKey: .category)

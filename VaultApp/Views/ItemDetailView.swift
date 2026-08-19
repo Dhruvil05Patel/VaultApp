@@ -11,6 +11,7 @@ struct ItemDetailView: View {
     @State private var copiedField: String? = nil   // tracks which field was just copied
     @State private var isCheckingBreach: Bool = false
     @State private var breachError: String? = nil
+    @State private var showPasswordChange: Bool = false
 
     // MARK: - Body
 
@@ -36,6 +37,21 @@ struct ItemDetailView: View {
                         )
 
                         passwordRow
+
+                        Button {
+                            showPasswordChange = true
+                        } label: {
+                            Label("Change Password…", systemImage: "arrow.triangle.2.circlepath")
+                                .font(.callout)
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(item.url.isEmpty)
+                        .help(item.url.isEmpty ? "Add a URL to this item to enable guided password change" : "Open the site and change this password")
+                        
+                        if let age = item.passwordAge {
+                            Text("Password changed \(age) day\(age == 1 ? "" : "s") ago")
+                                .font(.caption2).foregroundStyle(.tertiary)
+                        }
 
                         if item.hasTOTP {
                             TOTPRowView(secret: item.totpSecret)
@@ -97,6 +113,10 @@ struct ItemDetailView: View {
         }
         .sheet(isPresented: $showEditSheet) {
             AddItemView(existingItem: item)   // Task 09 — edit mode
+                .environmentObject(vaultManager)
+        }
+        .sheet(isPresented: $showPasswordChange) {
+            PasswordChangeBrowserView(item: item)
                 .environmentObject(vaultManager)
         }
         .confirmationDialog(
