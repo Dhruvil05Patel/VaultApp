@@ -83,6 +83,34 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
 
+            // MARK: Local Network Sync Section
+            Section {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Sync over Local Wi-Fi")
+                        Text("Sync vaults directly with another Mac on your network without internet.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $settings.p2pSyncEnabled)
+                        .toggleStyle(.switch).labelsHidden()
+                }
+
+                if settings.p2pSyncEnabled {
+                    TextField("Device Name", text: $settings.p2pDeviceName)
+                        .textFieldStyle(.roundedBorder)
+
+                    Button("Sync with Nearby Mac…") {
+                        showP2PDiscovery = true
+                    }
+                }
+            } header: {
+                Text("Local Network Sync")
+            } footer: {
+                Text("Your vault is sent fully encrypted. You must use the same master password on both Macs.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
             // MARK: Security Section
             Section {
                 // Auto-lock timeout picker
@@ -250,6 +278,9 @@ struct SettingsView: View {
         .sheet(isPresented: $showDuressSetup) {
             DuressModeSetupView().environmentObject(VaultManager.shared)
         }
+        .sheet(isPresented: $showP2PDiscovery) {
+            P2PDiscoveryView()
+        }
     }
 
     // MARK: - Helpers
@@ -257,6 +288,7 @@ struct SettingsView: View {
     @State private var showUnlockRequiredAlert: Bool = false
     @State private var biometricError: String? = nil
     @State private var showDuressSetup: Bool = false
+    @State private var showP2PDiscovery: Bool = false
 
     private var biometricBinding: Binding<Bool> {
         Binding(

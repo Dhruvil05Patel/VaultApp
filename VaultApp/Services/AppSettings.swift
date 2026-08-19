@@ -53,6 +53,14 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(hasCompletedOnboarding, forKey: "hasCompletedOnboarding") }
     }
 
+    @Published var p2pSyncEnabled: Bool {
+        didSet { UserDefaults.standard.set(p2pSyncEnabled, forKey: "p2pSyncEnabled") }
+    }
+
+    @Published var p2pDeviceName: String {
+        didSet { UserDefaults.standard.set(p2pDeviceName, forKey: "p2pDeviceName") }
+    }
+
     private init() {
         // Load persisted values, falling back to sensible defaults
         self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
@@ -65,5 +73,7 @@ final class AppSettings: ObservableObject {
         self.showMenuBarIcon      = UserDefaults.standard.object(forKey: "showMenuBarIcon") as? Bool ?? true
         self.isDuressModeEnabled  = UserDefaults.standard.bool(forKey: "isDuressModeEnabled")
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+        self.p2pSyncEnabled       = UserDefaults.standard.bool(forKey: "p2pSyncEnabled")
+        self.p2pDeviceName        = UserDefaults.standard.string(forKey: "p2pDeviceName") ?? ""
     }
 }
