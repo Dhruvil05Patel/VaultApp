@@ -12,14 +12,24 @@ struct VaultListView: View {
         case tag(String)
     }
 
+    enum FolderSheet: Identifiable {
+        case new
+        case edit(VaultFolder)
+        var id: String {
+            switch self {
+            case .new: return "new"
+            case .edit(let f): return f.id.uuidString
+            }
+        }
+    }
+
     // Search and filter state
     @State private var searchQuery: String = ""
     @State private var sidebarFilter: SidebarFilter = .all
     @State private var selectedItemID: UUID? = nil
 
     // Folder / tag management state
-    @State private var showFolderManager: Bool = false
-    @State private var folderToEdit: VaultFolder? = nil
+    @State private var folderSheet: FolderSheet? = nil
     @State private var tagToManage: String? = nil
     @State private var showTagRename: Bool = false
 
@@ -105,10 +115,15 @@ struct VaultListView: View {
             ExportView()
                 .environmentObject(vaultManager)
         }
-        .sheet(isPresented: $showFolderManager) {
-            FolderManageView(folder: folderToEdit)
-                .environmentObject(vaultManager)
-                .id(folderToEdit?.id)
+        .sheet(item: $folderSheet) { sheet in
+            switch sheet {
+            case .new:
+                FolderManageView(folder: nil)
+                    .environmentObject(vaultManager)
+            case .edit(let folder):
+                FolderManageView(folder: folder)
+                    .environmentObject(vaultManager)
+            }
         }
         .sheet(isPresented: $showTagRename) {
             if let tag = tagToManage {
@@ -173,8 +188,7 @@ struct VaultListView: View {
                     }
                     .contextMenu {
                         Button("Edit Folder…") { 
-                            folderToEdit = folder
-                            DispatchQueue.main.async { showFolderManager = true }
+                            folderSheet = .edit(folder)
                         }
                         Button("Delete", role: .destructive) {
                             vaultManager.deleteFolder(id: folder.id)
@@ -183,8 +197,7 @@ struct VaultListView: View {
                     }
                 }
                 Button {
-                    folderToEdit = nil
-                    DispatchQueue.main.async { showFolderManager = true }
+                    folderSheet = .new
                 } label: {
                     Label("New Folder…", systemImage: "folder.badge.plus")
                         .foregroundStyle(.blue)
