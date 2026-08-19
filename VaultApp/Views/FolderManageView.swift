@@ -19,7 +19,7 @@ struct FolderManageView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(folder == nil ? "New Folder" : "Rename Folder")
+                Text(folder == nil ? "New Folder" : "Edit Folder")
                     .font(.headline)
                 Spacer()
                 Button("Cancel") { dismiss() }.keyboardShortcut(.escape, modifiers: [])

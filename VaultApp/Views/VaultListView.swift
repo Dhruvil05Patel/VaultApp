@@ -108,6 +108,7 @@ struct VaultListView: View {
         .sheet(isPresented: $showFolderManager) {
             FolderManageView(folder: folderToEdit)
                 .environmentObject(vaultManager)
+                .id(folderToEdit?.id)
         }
         .sheet(isPresented: $showTagRename) {
             if let tag = tagToManage {
@@ -171,7 +172,10 @@ struct VaultListView: View {
                         sidebarFilter = .folder(folder.id)
                     }
                     .contextMenu {
-                        Button("Rename…") { folderToEdit = folder; showFolderManager = true }
+                        Button("Edit Folder…") { 
+                            folderToEdit = folder
+                            DispatchQueue.main.async { showFolderManager = true }
+                        }
                         Button("Delete", role: .destructive) {
                             vaultManager.deleteFolder(id: folder.id)
                             if sidebarFilter == .folder(folder.id) { sidebarFilter = .all }
@@ -179,7 +183,8 @@ struct VaultListView: View {
                     }
                 }
                 Button {
-                    showFolderManager = true; folderToEdit = nil
+                    folderToEdit = nil
+                    DispatchQueue.main.async { showFolderManager = true }
                 } label: {
                     Label("New Folder…", systemImage: "folder.badge.plus")
                         .foregroundStyle(.blue)
