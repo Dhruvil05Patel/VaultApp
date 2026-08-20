@@ -40,6 +40,7 @@ struct VaultListView: View {
     @State private var showBulkBreachCheck: Bool = false
     @State private var showImport: Bool = false
     @State private var showExport: Bool = false
+    @State private var showReceiveShare: Bool = false
     @State private var showDeleteConfirmForID: UUID? = nil
 
     @FocusState private var searchFocused: Bool
@@ -113,6 +114,10 @@ struct VaultListView: View {
         }
         .sheet(isPresented: $showExport) {
             ExportView()
+                .environmentObject(vaultManager)
+        }
+        .sheet(isPresented: $showReceiveShare) {
+            ShareReceiveView()
                 .environmentObject(vaultManager)
         }
         .sheet(item: $folderSheet) { sheet in
@@ -439,6 +444,13 @@ struct VaultListView: View {
 
         // Right side — add + generator
         ToolbarItemGroup(placement: .primaryAction) {
+            Button {
+                showReceiveShare = true
+            } label: {
+                Label("Receive Share", systemImage: "tray.and.arrow.down.fill")
+            }
+            .help("Import fields shared by another VaultApp user")
+
             Button {
                 showExport = true
             } label: {
