@@ -13,6 +13,7 @@ struct ItemDetailView: View {
     @State private var breachError: String? = nil
     @State private var showPasswordChange: Bool = false
     @State private var showShareFields: Bool = false
+    @State private var hideForCapture: Bool = false
 
     // MARK: - Body
 
@@ -130,6 +131,12 @@ struct ItemDetailView: View {
         .sheet(isPresented: $showPasswordChange) {
             PasswordChangeBrowserView(item: item)
                 .environmentObject(vaultManager)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .screenCaptureStarted)) { _ in
+            withAnimation { hideForCapture = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .screenCaptureStopped)) { _ in
+            withAnimation { hideForCapture = false }
         }
         .confirmationDialog(
             "Delete \"\(item.title)\"?",
@@ -269,15 +276,22 @@ struct ItemDetailView: View {
                 .fontWeight(.medium)
 
             HStack {
-                if showPassword {
-                    Text(item.password)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .lineLimit(1)
-                } else {
-                    Text(String(repeating: "●", count: min(item.password.count, 20)))
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.secondary)
+                Group {
+                    if hideForCapture {
+                        HStack {
+                            Image(systemName: "eye.slash.fill").foregroundStyle(.secondary)
+                            Text("Hidden during screen capture")
+                                .font(.callout).foregroundStyle(.secondary).italic()
+                        }
+                    } else if showPassword {
+                        SecureDisplayField(text: item.password, isRevealed: true,
+                                          font: .monospacedSystemFont(ofSize: 14, weight: .regular))
+                            .frame(height: 20)
+                    } else {
+                        Text(String(repeating: "●", count: min(item.password.count, 20)))
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Spacer()

@@ -131,6 +131,18 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // MARK: Screen Protection Section
+            Section {
+                Toggle("Hide passwords during screen capture", isOn: $settings.screenCaptureProtection)
+                Toggle("Lock vault when screen sharing starts", isOn: $settings.lockOnScreenShare)
+                    .disabled(!settings.screenCaptureProtection)
+            } header: {
+                Text("Screen Protection")
+            } footer: {
+                Text("When enabled, password fields are hidden if a screen recording or screen share is detected. Locking provides maximum protection.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
             // MARK: Biometric Section
             if BiometricService.isAvailable() {
                 Section {
