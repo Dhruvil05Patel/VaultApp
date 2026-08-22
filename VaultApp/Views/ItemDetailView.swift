@@ -14,6 +14,8 @@ struct ItemDetailView: View {
     @State private var showPasswordChange: Bool = false
     @State private var showShareFields: Bool = false
     @State private var hideForCapture: Bool = false
+    @State private var phishingResult: AntiPhishingService.CheckResult? = nil
+    @State private var phishingCheckDone: Bool = false
 
     // MARK: - Body
 
@@ -26,6 +28,23 @@ struct ItemDetailView: View {
 
                 Divider()
                     .padding(.bottom, 24)
+
+                if let result = phishingResult, result.isSuspicious {
+                    PhishingWarningBanner(
+                        result: result,
+                        onOpenCorrectSite: {
+                            if let url = URL(string: item.url.hasPrefix("http") ? item.url : "https://\(item.url)") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        },
+                        onDismiss: {
+                            withAnimation { phishingResult = nil }
+                        }
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .animation(.easeInOut(duration: 0.2), value: phishingResult != nil)
+                    .padding(.bottom, 24)
+                }
 
                 // Fields
                 VStack(alignment: .leading, spacing: 20) {
@@ -150,6 +169,14 @@ struct ItemDetailView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .screenCaptureStopped)) { _ in
             withAnimation { hideForCapture = false }
+        }
+        .onAppear {
+            checkClipboardForPhishing()
+        }
+        .onChange(of: item.id) { _ in
+            phishingCheckDone = false
+            phishingResult = nil
+            checkClipboardForPhishing()
         }
         .confirmationDialog(
             "Delete \"\(item.title)\"?",
@@ -477,6 +504,34 @@ struct ItemDetailView: View {
                 breachError = error.localizedDescription
             }
             isCheckingBreach = false
+        }
+    }
+
+    private func checkClipboardForPhishing() {
+        guard !phishingCheckDone else { return }
+        guard !item.url.isEmpty else { return }
+
+        phishingCheckDone = true
+
+        // Read clipboard — this is what the user likely just copied from their browser
+        guard let clipboardContent = NSPasteboard.general.string(forType: .string),
+              !clipboardContent.isEmpty else { return }
+
+        // Only check if clipboard content looks like a URL
+        let trimmed = clipboardContent.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("http") || (trimmed.contains(".") && !trimmed.contains(" ")) else {
+            return
+        }
+
+        let result = AntiPhishingService.check(
+            storedURLString: item.url,
+            detectedURLString: trimmed
+        )
+
+        if result.isSuspicious {
+            withAnimation {
+                phishingResult = result
+            }
         }
     }
 
