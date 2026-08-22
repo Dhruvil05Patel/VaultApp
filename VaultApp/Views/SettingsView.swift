@@ -131,6 +131,28 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // MARK: Activity Log Section
+            Section {
+                Toggle("Enable Activity Log", isOn: $settings.auditLogEnabled)
+                
+                if settings.auditLogEnabled {
+                    Button("View Activity Log…") {
+                        showAuditLog = true
+                    }
+                    
+                    HStack {
+                        Image(systemName: "info.circle").foregroundStyle(.secondary)
+                        Text("The log is encrypted with your vault key and stores the last 1,000 events.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Activity Log")
+            } footer: {
+                Text("Records vault operations (unlocks, copies, changes) to help you detect unexpected access.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
             // MARK: Screen Protection Section
             Section {
                 Toggle("Hide passwords during screen capture", isOn: $settings.screenCaptureProtection)
@@ -319,6 +341,9 @@ struct SettingsView: View {
         .sheet(isPresented: $showInheritanceSetup) {
             InheritanceSetupView()
         }
+        .sheet(isPresented: $showAuditLog) {
+            AuditLogView()
+        }
     }
 
     // MARK: - Helpers
@@ -328,6 +353,7 @@ struct SettingsView: View {
     @State private var showDuressSetup: Bool = false
     @State private var showP2PDiscovery: Bool = false
     @State private var showInheritanceSetup: Bool = false
+    @State private var showAuditLog: Bool = false
 
     private var biometricBinding: Binding<Bool> {
         Binding(

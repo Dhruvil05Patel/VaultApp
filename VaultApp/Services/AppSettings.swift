@@ -89,6 +89,10 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(lastVaultActivityDate, forKey: "lastVaultActivityDate") }
     }
 
+    @Published var auditLogEnabled: Bool {
+        didSet { UserDefaults.standard.set(auditLogEnabled, forKey: "auditLogEnabled") }
+    }
+
     private init() {
         // Load persisted values, falling back to sensible defaults
         self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
@@ -110,5 +114,6 @@ final class AppSettings: ObservableObject {
         self.inheritanceInactivityDays = UserDefaults.standard.object(forKey: "inheritanceInactivityDays") as? Int ?? 90
         self.inheritanceGraceDays     = UserDefaults.standard.object(forKey: "inheritanceGraceDays") as? Int ?? 14
         self.lastVaultActivityDate    = UserDefaults.standard.object(forKey: "lastVaultActivityDate") as? Date
+        self.auditLogEnabled          = UserDefaults.standard.object(forKey: "auditLogEnabled") as? Bool ?? true
     }
 }
