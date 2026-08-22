@@ -14,8 +14,7 @@ struct ItemDetailView: View {
     @State private var showPasswordChange: Bool = false
     @State private var showShareFields: Bool = false
     @State private var hideForCapture: Bool = false
-    @State private var phishingResult: AntiPhishingService.CheckResult? = nil
-    @State private var phishingCheckDone: Bool = false
+    @ObservedObject var phishingMonitor = ClipboardPhishingMonitor.shared
 
     // MARK: - Body
 
@@ -29,7 +28,7 @@ struct ItemDetailView: View {
                 Divider()
                     .padding(.bottom, 24)
 
-                if let result = phishingResult, result.isSuspicious {
+                if let result = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
                     PhishingWarningBanner(
                         result: result,
                         onOpenCorrectSite: {
@@ -38,11 +37,11 @@ struct ItemDetailView: View {
                             }
                         },
                         onDismiss: {
-                            withAnimation { phishingResult = nil }
+                            withAnimation { phishingMonitor.clearThreat() }
                         }
                     )
                     .transition(.move(edge: .top).combined(with: .opacity))
-                    .animation(.easeInOut(duration: 0.2), value: phishingResult != nil)
+                    .animation(.easeInOut(duration: 0.2), value: phishingMonitor.currentThreat != nil)
                     .padding(.bottom, 24)
                 }
 
@@ -169,14 +168,6 @@ struct ItemDetailView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .screenCaptureStopped)) { _ in
             withAnimation { hideForCapture = false }
-        }
-        .onAppear {
-            checkClipboardForPhishing()
-        }
-        .onChange(of: item.id) { _ in
-            phishingCheckDone = false
-            phishingResult = nil
-            checkClipboardForPhishing()
         }
         .confirmationDialog(
             "Delete \"\(item.title)\"?",
@@ -504,34 +495,6 @@ struct ItemDetailView: View {
                 breachError = error.localizedDescription
             }
             isCheckingBreach = false
-        }
-    }
-
-    private func checkClipboardForPhishing() {
-        guard !phishingCheckDone else { return }
-        guard !item.url.isEmpty else { return }
-
-        phishingCheckDone = true
-
-        // Read clipboard — this is what the user likely just copied from their browser
-        guard let clipboardContent = NSPasteboard.general.string(forType: .string),
-              !clipboardContent.isEmpty else { return }
-
-        // Only check if clipboard content looks like a URL
-        let trimmed = clipboardContent.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard trimmed.hasPrefix("http") || (trimmed.contains(".") && !trimmed.contains(" ")) else {
-            return
-        }
-
-        let result = AntiPhishingService.check(
-            storedURLString: item.url,
-            detectedURLString: trimmed
-        )
-
-        if result.isSuspicious {
-            withAnimation {
-                phishingResult = result
-            }
         }
     }
 

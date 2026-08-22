@@ -6,6 +6,7 @@ struct MenuBarQuickResultRow: View {
 
     @State private var copiedField: String? = nil
     @State private var isExpanded: Bool = false
+    @ObservedObject var phishingMonitor = ClipboardPhishingMonitor.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,26 +48,46 @@ struct MenuBarQuickResultRow: View {
 
             // Expanded actions
             if isExpanded {
-                HStack(spacing: 8) {
-                    actionButton("Copy Password", icon: "key.fill") {
-                        ClipboardService.copy(item.password)
-                        copiedField = "password"
-                        autoClearCopied()
+                VStack(spacing: 0) {
+                    if let threat = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
+                        PhishingWarningBanner(
+                            result: threat,
+                            onOpenCorrectSite: {
+                                if let url = URL(string: item.url.hasPrefix("http") ? item.url : "https://\(item.url)") {
+                                    NSWorkspace.shared.open(url)
+                                }
+                            },
+                            onDismiss: {
+                                withAnimation {
+                                    phishingMonitor.clearThreat()
+                                }
+                            }
+                        )
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 8)
                     }
-                    actionButton("Copy Username", icon: "person.fill") {
-                        ClipboardService.copy(item.username)
-                        copiedField = "username"
-                        autoClearCopied()
-                    }
-                    if !item.url.isEmpty {
-                        actionButton("Open URL", icon: "safari") {
-                            if let url = URL(string: item.url.hasPrefix("http") ? item.url : "https://\(item.url)") {
-                                NSWorkspace.shared.open(url)
+
+                    HStack(spacing: 8) {
+                        actionButton("Copy Password", icon: "key.fill") {
+                            ClipboardService.copy(item.password)
+                            copiedField = "password"
+                            autoClearCopied()
+                        }
+                        actionButton("Copy Username", icon: "person.fill") {
+                            ClipboardService.copy(item.username)
+                            copiedField = "username"
+                            autoClearCopied()
+                        }
+                        if !item.url.isEmpty {
+                            actionButton("Open URL", icon: "safari") {
+                                if let url = URL(string: item.url.hasPrefix("http") ? item.url : "https://\(item.url)") {
+                                    NSWorkspace.shared.open(url)
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 12).padding(.bottom, 8)
                 }
-                .padding(.horizontal, 12).padding(.bottom, 8)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }

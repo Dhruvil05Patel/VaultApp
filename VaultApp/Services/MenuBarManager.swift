@@ -13,6 +13,7 @@ final class MenuBarManager: NSObject {
     private var popover: NSPopover?
     private var eventMonitor: Any?   // for click-outside-to-close
     private var stateCancellable: AnyCancellable?
+    private var phishingCancellable: AnyCancellable?
 
     // MARK: - Setup
 
@@ -50,6 +51,13 @@ final class MenuBarManager: NSObject {
                     self?.updateIcon(isLocked: state != .unlocked)
                 }
             }
+
+        phishingCancellable = ClipboardPhishingMonitor.shared.$currentThreat
+            .sink { [weak self] _ in
+                Task { @MainActor in
+                    self?.updateIcon(isLocked: VaultManager.shared.authenticationState != .unlocked)
+                }
+            }
     }
 
     func teardown() {
@@ -60,6 +68,8 @@ final class MenuBarManager: NSObject {
         popover = nil
         stateCancellable?.cancel()
         stateCancellable = nil
+        phishingCancellable?.cancel()
+        phishingCancellable = nil
     }
 
     // MARK: - Toggle
@@ -92,11 +102,22 @@ final class MenuBarManager: NSObject {
     // MARK: - Update icon to reflect lock state
 
     func updateIcon(isLocked: Bool) {
-        let symbolName = isLocked ? "lock.shield.fill" : "lock.open.fill"
-        statusItem?.button?.image = NSImage(
-            systemSymbolName: symbolName,
-            accessibilityDescription: isLocked ? "VaultApp (Locked)" : "VaultApp"
-        )
-        statusItem?.button?.image?.isTemplate = true
+        let hasThreat = ClipboardPhishingMonitor.shared.currentThreat != nil
+
+        if hasThreat {
+            statusItem?.button?.image = NSImage(
+                systemSymbolName: "exclamationmark.triangle.fill",
+                accessibilityDescription: "VaultApp (Phishing Warning)"
+            )
+            // Turn off template to allow red coloring (if supported by OS), otherwise fallback to template
+            statusItem?.button?.image?.isTemplate = true
+        } else {
+            let symbolName = isLocked ? "lock.shield.fill" : "lock.open.fill"
+            statusItem?.button?.image = NSImage(
+                systemSymbolName: symbolName,
+                accessibilityDescription: isLocked ? "VaultApp (Locked)" : "VaultApp"
+            )
+            statusItem?.button?.image?.isTemplate = true
+        }
     }
 }
