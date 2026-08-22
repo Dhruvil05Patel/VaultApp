@@ -37,6 +37,7 @@ struct VaultListView: View {
     @State private var showAddItem: Bool = false
     @State private var addCategory: VaultItem.Category = .login
     @State private var showGenerator: Bool = false
+    @State private var showBurnerGenerator: Bool = false
     @State private var showBulkBreachCheck: Bool = false
     @State private var showImport: Bool = false
     @State private var showExport: Bool = false
@@ -103,6 +104,10 @@ struct VaultListView: View {
         }
         .sheet(isPresented: $showGenerator) {
             GeneratorView()  // Built in Task 10
+        }
+        .sheet(isPresented: $showBurnerGenerator) {
+            BurnerIdentityView()
+                .environmentObject(vaultManager)
         }
         .sheet(isPresented: $showBulkBreachCheck) {
             BulkBreachCheckView()
@@ -480,13 +485,18 @@ struct VaultListView: View {
             }
             .help("Open the password generator")
 
-            Button {
-                addCategory = .login
-                showAddItem = true
+            Menu {
+                Button("New Password Entry") { 
+                    addCategory = .login
+                    showAddItem = true 
+                }
+                Button("New Burner Identity…") { 
+                    showBurnerGenerator = true 
+                }
             } label: {
-                Label("Add Password", systemImage: "plus")
+                Label("Add", systemImage: "plus")
             }
-            .help("Add a new password entry")
+            .help("Add a new entry")
             .keyboardShortcut("n", modifiers: .command)
         }
     }

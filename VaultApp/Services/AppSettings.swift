@@ -61,6 +61,10 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(p2pDeviceName, forKey: "p2pDeviceName") }
     }
 
+    @Published var aliasEmailDomain: String {
+        didSet { UserDefaults.standard.set(aliasEmailDomain, forKey: "aliasEmailDomain") }
+    }
+
     private init() {
         // Load persisted values, falling back to sensible defaults
         self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
@@ -75,5 +79,6 @@ final class AppSettings: ObservableObject {
         self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
         self.p2pSyncEnabled       = UserDefaults.standard.bool(forKey: "p2pSyncEnabled")
         self.p2pDeviceName        = UserDefaults.standard.string(forKey: "p2pDeviceName") ?? ""
+        self.aliasEmailDomain     = UserDefaults.standard.string(forKey: "aliasEmailDomain") ?? ""
     }
 }
