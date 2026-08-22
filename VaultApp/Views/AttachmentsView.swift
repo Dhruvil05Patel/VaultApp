@@ -68,16 +68,18 @@ struct AttachmentsView: View {
 
     private func handleFilePick(result: Result<[URL], Error>) {
         guard case .success(let urls) = result, let url = urls.first else { return }
-        guard url.startAccessingSecurityScopedResource() else {
-            errorMessage = "Could not access the selected file."
-            return
-        }
-        defer { url.stopAccessingSecurityScopedResource() }
 
         isLoading = true
         errorMessage = nil
 
         Task {
+            let didStartAccessing = url.startAccessingSecurityScopedResource()
+            defer {
+                if didStartAccessing {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
             do {
                 let data = try Data(contentsOf: url)
                 guard let key = vaultManager.symmetricKey else {
