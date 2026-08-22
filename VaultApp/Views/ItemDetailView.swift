@@ -101,6 +101,11 @@ struct ItemDetailView: View {
                         notesRow
                     }
 
+                    Divider().padding(.vertical, 8)
+
+                    AttachmentsView(item: item)
+                        .environmentObject(vaultManager)
+
                     metadataRow
                 }
 

@@ -18,8 +18,14 @@ struct VaultItem: Codable, Identifiable, Hashable {
     // Structured identity fields — only populated when category == .identity
     var identityFields: IdentityFields? = nil
 
-    // SSH and API Key fields
+    // SSH Key and API Token fields — only populated when category == .sshKey or .seedPhrase
     var sshKeyFields: SSHKeyFields? = nil
+
+    // File attachments associated with this item
+    var attachments: [VaultAttachment] = []
+
+    // Convenience: true when there are attachments
+    var hasAttachments: Bool { !attachments.isEmpty }
 
     // Full-text secure note body — only populated when category == .secureNote
     var secureNoteBody: String = ""
@@ -102,6 +108,7 @@ struct VaultItem: Codable, Identifiable, Hashable {
     private enum CodingKeys: String, CodingKey {
         case id, title, username, password, url, notes
         case cardFields, identityFields, sshKeyFields, secureNoteBody, totpSecret
+        case attachments
         case folderID, tags, lastPasswordChangedAt, geofenceRestricted
         case createdAt, updatedAt, category
         case breachStatus, breachCount, breachCheckedAt
@@ -118,6 +125,7 @@ struct VaultItem: Codable, Identifiable, Hashable {
         cardFields     = try c.decodeIfPresent(CardFields.self,     forKey: .cardFields)
         identityFields = try c.decodeIfPresent(IdentityFields.self, forKey: .identityFields)
         sshKeyFields   = try c.decodeIfPresent(SSHKeyFields.self,   forKey: .sshKeyFields)
+        attachments    = try c.decodeIfPresent([VaultAttachment].self, forKey: .attachments) ?? []
         secureNoteBody = try c.decodeIfPresent(String.self, forKey: .secureNoteBody) ?? ""
         totpSecret     = try c.decodeIfPresent(String.self, forKey: .totpSecret) ?? ""
         folderID = try c.decodeIfPresent(UUID.self, forKey: .folderID)

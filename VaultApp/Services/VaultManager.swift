@@ -37,7 +37,7 @@ final class VaultManager: ObservableObject {
 
     // The derived symmetric key — lives in memory only.
     // Cleared to nil when the vault is locked.
-    private var symmetricKey: SymmetricKey? = nil
+    internal var symmetricKey: SymmetricKey? = nil
 
     // MARK: - File System Paths
 
@@ -248,6 +248,12 @@ final class VaultManager: ObservableObject {
     }
 
     func deleteItem(id: UUID) {
+        // Clean up attachment files before deleting the item
+        if let item = vault.item(withId: id) {
+            for attachment in item.attachments {
+                AttachmentService.delete(attachment: attachment)
+            }
+        }
         vault.delete(id: id)
         do {
             try saveVault()
