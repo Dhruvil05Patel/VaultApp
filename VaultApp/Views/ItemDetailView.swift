@@ -87,6 +87,14 @@ struct ItemDetailView: View {
                                 .foregroundStyle(.secondary)
                                 .italic()
                         }
+                    } else if item.category == .sshKey || item.category == .seedPhrase {
+                        if let fields = item.sshKeyFields {
+                            SSHKeyDetailSection(fields: fields)
+                        } else {
+                            Text("No key data saved.")
+                                .foregroundStyle(.secondary)
+                                .italic()
+                        }
                     }
 
                     if !item.notes.isEmpty {
@@ -473,6 +481,8 @@ struct ItemDetailView: View {
         case .creditCard: return .purple
         case .secureNote: return .orange
         case .identity:   return .green
+        case .sshKey:     return .teal
+        case .seedPhrase: return .indigo
         }
     }
 }

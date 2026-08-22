@@ -34,11 +34,18 @@ struct VaultAppApp: App {
                         SyncService.shared.start()
                     }
                     MenuBarManager.shared.setup()
+                    InheritanceService.shared.checkInactivity()
                     GeofenceService.shared.startMonitoring()
                 }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: true))
+        .onChange(of: VaultManager.shared.isUnlocked) { _, isUnlocked in
+            if isUnlocked {
+                InheritanceService.shared.recordActivity()
+            }
+            MenuBarManager.shared.updateIcon(isLocked: !isUnlocked)
+        }
         .commands {
             VaultCommands()
         }

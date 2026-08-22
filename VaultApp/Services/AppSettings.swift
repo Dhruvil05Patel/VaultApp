@@ -73,6 +73,22 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(lockOnScreenShare, forKey: "lockOnScreenShare") }
     }
 
+    @Published var inheritanceEnabled: Bool {
+        didSet { UserDefaults.standard.set(inheritanceEnabled, forKey: "inheritanceEnabled") }
+    }
+
+    @Published var inheritanceInactivityDays: Int {
+        didSet { UserDefaults.standard.set(inheritanceInactivityDays, forKey: "inheritanceInactivityDays") }
+    }
+
+    @Published var inheritanceGraceDays: Int {
+        didSet { UserDefaults.standard.set(inheritanceGraceDays, forKey: "inheritanceGraceDays") }
+    }
+
+    @Published var lastVaultActivityDate: Date? {
+        didSet { UserDefaults.standard.set(lastVaultActivityDate, forKey: "lastVaultActivityDate") }
+    }
+
     private init() {
         // Load persisted values, falling back to sensible defaults
         self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
@@ -90,5 +106,9 @@ final class AppSettings: ObservableObject {
         self.aliasEmailDomain     = UserDefaults.standard.string(forKey: "aliasEmailDomain") ?? ""
         self.screenCaptureProtection = UserDefaults.standard.object(forKey: "screenCaptureProtection") as? Bool ?? true
         self.lockOnScreenShare    = UserDefaults.standard.bool(forKey: "lockOnScreenShare")
+        self.inheritanceEnabled       = UserDefaults.standard.bool(forKey: "inheritanceEnabled")
+        self.inheritanceInactivityDays = UserDefaults.standard.object(forKey: "inheritanceInactivityDays") as? Int ?? 90
+        self.inheritanceGraceDays     = UserDefaults.standard.object(forKey: "inheritanceGraceDays") as? Int ?? 14
+        self.lastVaultActivityDate    = UserDefaults.standard.object(forKey: "lastVaultActivityDate") as? Date
     }
 }

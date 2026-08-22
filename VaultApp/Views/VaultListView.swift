@@ -42,6 +42,7 @@ struct VaultListView: View {
     @State private var showImport: Bool = false
     @State private var showExport: Bool = false
     @State private var showReceiveShare: Bool = false
+    @State private var showHealthReport: Bool = false
     @State private var showDeleteConfirmForID: UUID? = nil
 
     @FocusState private var searchFocused: Bool
@@ -123,6 +124,10 @@ struct VaultListView: View {
         }
         .sheet(isPresented: $showReceiveShare) {
             ShareReceiveView()
+                .environmentObject(vaultManager)
+        }
+        .sheet(isPresented: $showHealthReport) {
+            VaultHealthView()
                 .environmentObject(vaultManager)
         }
         .sheet(item: $folderSheet) { sheet in
@@ -276,6 +281,12 @@ struct VaultListView: View {
                                     if !item.secureNoteBody.isEmpty {
                                         Button("Copy Note") {
                                             copyToClipboard(item.secureNoteBody)
+                                        }
+                                    }
+                                case .sshKey, .seedPhrase:
+                                    if let keyFields = item.sshKeyFields, !keyFields.primarySecret.isEmpty {
+                                        Button("Copy Secret") {
+                                            copyToClipboard(keyFields.primarySecret)
                                         }
                                     }
                                 }
@@ -456,6 +467,11 @@ struct VaultListView: View {
             }
             .help("Import fields shared by another VaultApp user")
 
+            Button { showHealthReport = true } label: {
+                Label("Security Report", systemImage: "chart.bar.fill")
+            }
+            .help("View vault security health report")
+
             Button {
                 showExport = true
             } label: {
@@ -562,6 +578,8 @@ struct VaultItemRow: View {
             return item.secureNoteBody.isEmpty ? "Secure note" : item.secureNoteBody
         case .identity:
             return item.identityFields?.fullName ?? ""
+        case .sshKey, .seedPhrase:
+            return item.sshKeyFields?.hostname.isEmpty == false ? item.sshKeyFields!.hostname : "Secure key"
         }
     }
 
@@ -571,6 +589,8 @@ struct VaultItemRow: View {
         case .creditCard: return .purple
         case .secureNote: return .orange
         case .identity:   return .green
+        case .sshKey:     return .teal
+        case .seedPhrase: return .indigo
         }
     }
 }

@@ -123,6 +123,8 @@ struct MenuBarQuickResultRow: View {
         case .creditCard: return .purple
         case .secureNote: return .orange
         case .identity:   return .green
+        case .sshKey:     return .teal
+        case .seedPhrase: return .indigo
         }
     }
 }

@@ -18,6 +18,9 @@ struct VaultItem: Codable, Identifiable, Hashable {
     // Structured identity fields — only populated when category == .identity
     var identityFields: IdentityFields? = nil
 
+    // SSH and API Key fields
+    var sshKeyFields: SSHKeyFields? = nil
+
     // Full-text secure note body — only populated when category == .secureNote
     var secureNoteBody: String = ""
 
@@ -75,6 +78,8 @@ struct VaultItem: Codable, Identifiable, Hashable {
         case creditCard = "Credit Card"
         case secureNote = "Secure Note"
         case identity   = "Identity"
+        case sshKey     = "SSH / API Key"
+        case seedPhrase = "Seed Phrase"
 
         // SF Symbol icon name for each category
         var icon: String {
@@ -83,6 +88,8 @@ struct VaultItem: Codable, Identifiable, Hashable {
             case .creditCard: return "creditcard.fill"
             case .secureNote: return "note.text"
             case .identity:   return "person.fill"
+            case .sshKey:     return "terminal.fill"
+            case .seedPhrase: return "bitcoinsign.circle.fill"
             }
         }
     }
@@ -94,7 +101,7 @@ struct VaultItem: Codable, Identifiable, Hashable {
     // of making the whole vault undecodable.
     private enum CodingKeys: String, CodingKey {
         case id, title, username, password, url, notes
-        case cardFields, identityFields, secureNoteBody, totpSecret
+        case cardFields, identityFields, sshKeyFields, secureNoteBody, totpSecret
         case folderID, tags, lastPasswordChangedAt, geofenceRestricted
         case createdAt, updatedAt, category
         case breachStatus, breachCount, breachCheckedAt
@@ -110,6 +117,7 @@ struct VaultItem: Codable, Identifiable, Hashable {
         notes   = try c.decode(String.self,      forKey: .notes)
         cardFields     = try c.decodeIfPresent(CardFields.self,     forKey: .cardFields)
         identityFields = try c.decodeIfPresent(IdentityFields.self, forKey: .identityFields)
+        sshKeyFields   = try c.decodeIfPresent(SSHKeyFields.self,   forKey: .sshKeyFields)
         secureNoteBody = try c.decodeIfPresent(String.self, forKey: .secureNoteBody) ?? ""
         totpSecret     = try c.decodeIfPresent(String.self, forKey: .totpSecret) ?? ""
         folderID = try c.decodeIfPresent(UUID.self, forKey: .folderID)

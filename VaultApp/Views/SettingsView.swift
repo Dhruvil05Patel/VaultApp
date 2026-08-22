@@ -219,6 +219,29 @@ struct SettingsView: View {
                 Text("Menu Bar")
             }
 
+            // MARK: Emergency Access Section
+            if VaultManager.shared.isUnlocked {
+                Section {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Emergency Access")
+                            Text(settings.inheritanceEnabled
+                                 ? "Active — backup after \(settings.inheritanceInactivityDays) days inactive"
+                                 : "Not configured")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: settings.inheritanceEnabled ? "checkmark.shield.fill" : "shield")
+                            .foregroundStyle(settings.inheritanceEnabled ? .green : .secondary)
+                    }
+                    Button("Configure Emergency Access…") {
+                        showInheritanceSetup = true
+                    }
+                } header: {
+                    Text("Emergency Access")
+                }
+            }
+
             // MARK: Advanced Security Section
             if VaultManager.shared.isUnlocked && !VaultManager.shared.isDuressMode {
                 Section {
@@ -293,6 +316,9 @@ struct SettingsView: View {
         .sheet(isPresented: $showP2PDiscovery) {
             P2PDiscoveryView()
         }
+        .sheet(isPresented: $showInheritanceSetup) {
+            InheritanceSetupView()
+        }
     }
 
     // MARK: - Helpers
@@ -301,6 +327,7 @@ struct SettingsView: View {
     @State private var biometricError: String? = nil
     @State private var showDuressSetup: Bool = false
     @State private var showP2PDiscovery: Bool = false
+    @State private var showInheritanceSetup: Bool = false
 
     private var biometricBinding: Binding<Bool> {
         Binding(

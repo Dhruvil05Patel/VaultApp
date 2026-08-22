@@ -23,6 +23,7 @@ struct AddItemView: View {
     @State private var totpError: String? = nil
     @State private var cardFields: CardFields = CardFields()
     @State private var identityFields: IdentityFields = IdentityFields()
+    @State private var sshKeyFields: SSHKeyFields = SSHKeyFields()
     @State private var secureNoteBody: String = ""
 
     // Folder + tags
@@ -47,6 +48,10 @@ struct AddItemView: View {
             return !title.trimmingCharacters(in: .whitespaces).isEmpty && !secureNoteBody.isEmpty
         case .identity:
             return !title.trimmingCharacters(in: .whitespaces).isEmpty && !identityFields.firstName.isEmpty
+        case .sshKey:
+            return !title.trimmingCharacters(in: .whitespaces).isEmpty && !sshKeyFields.primarySecret.isEmpty
+        case .seedPhrase:
+            return !title.trimmingCharacters(in: .whitespaces).isEmpty && !sshKeyFields.seedPhrase.isEmpty
         }
     }
 
@@ -145,6 +150,10 @@ struct AddItemView: View {
         case .identity:
             titleSection
             IdentityFormSection(fields: $identityFields)
+        case .sshKey, .seedPhrase:
+            titleSection
+            SSHKeyFormSection(fields: $sshKeyFields)
+            optionalFieldsSection
         }
     }
 
@@ -430,6 +439,7 @@ struct AddItemView: View {
             totpSecret = item.totpSecret
             cardFields     = item.cardFields ?? CardFields()
             identityFields = item.identityFields ?? IdentityFields()
+            sshKeyFields   = item.sshKeyFields ?? SSHKeyFields()
             secureNoteBody = item.secureNoteBody
             folderID = item.folderID
             tags     = item.tags
@@ -455,6 +465,7 @@ struct AddItemView: View {
             updated.totpSecret = totpSecret.trimmingCharacters(in: .whitespaces)
             updated.cardFields     = category == .creditCard ? cardFields : nil
             updated.identityFields = category == .identity   ? identityFields : nil
+            updated.sshKeyFields   = (category == .sshKey || category == .seedPhrase) ? sshKeyFields : nil
             updated.secureNoteBody = category == .secureNote ? secureNoteBody : ""
             updated.folderID = folderID
             updated.tags     = tags
@@ -471,6 +482,7 @@ struct AddItemView: View {
             newItem.totpSecret = totpSecret.trimmingCharacters(in: .whitespaces)
             newItem.cardFields     = category == .creditCard ? cardFields : nil
             newItem.identityFields = category == .identity   ? identityFields : nil
+            newItem.sshKeyFields   = (category == .sshKey || category == .seedPhrase) ? sshKeyFields : nil
             newItem.secureNoteBody = category == .secureNote ? secureNoteBody : ""
             newItem.folderID = folderID
             newItem.tags     = tags
