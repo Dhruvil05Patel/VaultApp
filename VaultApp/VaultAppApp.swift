@@ -36,6 +36,7 @@ struct VaultAppApp: App {
                     MenuBarManager.shared.setup()
                     InheritanceService.shared.checkInactivity()
                     GeofenceService.shared.startMonitoring()
+                    ClipboardPhishingMonitor.shared.start()
                 }
         }
         .windowStyle(.titleBar)

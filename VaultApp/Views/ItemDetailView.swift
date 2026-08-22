@@ -14,6 +14,7 @@ struct ItemDetailView: View {
     @State private var showPasswordChange: Bool = false
     @State private var showShareFields: Bool = false
     @State private var hideForCapture: Bool = false
+    @ObservedObject var phishingMonitor = ClipboardPhishingMonitor.shared
 
     // MARK: - Body
 
@@ -26,6 +27,23 @@ struct ItemDetailView: View {
 
                 Divider()
                     .padding(.bottom, 24)
+
+                if let result = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
+                    PhishingWarningBanner(
+                        result: result,
+                        onOpenCorrectSite: {
+                            if let url = URL(string: item.url.hasPrefix("http") ? item.url : "https://\(item.url)") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        },
+                        onDismiss: {
+                            withAnimation { phishingMonitor.clearThreat() }
+                        }
+                    )
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .animation(.easeInOut(duration: 0.2), value: phishingMonitor.currentThreat != nil)
+                    .padding(.bottom, 24)
+                }
 
                 // Fields
                 VStack(alignment: .leading, spacing: 20) {

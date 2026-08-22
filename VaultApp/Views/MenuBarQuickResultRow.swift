@@ -6,6 +6,7 @@ struct MenuBarQuickResultRow: View {
 
     @State private var copiedField: String? = nil
     @State private var isExpanded: Bool = false
+    @ObservedObject var phishingMonitor = ClipboardPhishingMonitor.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,10 +24,25 @@ struct MenuBarQuickResultRow: View {
 
                 // Title + username
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(item.title)
-                        .font(.callout).fontWeight(.medium).lineLimit(1)
-                    Text(item.username.isEmpty ? item.url : item.username)
-                        .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    HStack(spacing: 4) {
+                        Text(item.title)
+                            .font(.callout).fontWeight(.medium).lineLimit(1)
+                        if let threat = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(threat.confidence == .high ? .red : .orange)
+                        }
+                    }
+                    
+                    if let threat = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
+                        Text(threat.reason?.title ?? "Suspicious link copied")
+                            .font(.caption).fontWeight(.medium)
+                            .foregroundStyle(threat.confidence == .high ? .red : .orange)
+                            .lineLimit(1)
+                    } else {
+                        Text(item.username.isEmpty ? item.url : item.username)
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
                 }
 
                 Spacer()
@@ -47,26 +63,48 @@ struct MenuBarQuickResultRow: View {
 
             // Expanded actions
             if isExpanded {
-                HStack(spacing: 8) {
-                    actionButton("Copy Password", icon: "key.fill") {
-                        ClipboardService.copy(item.password)
-                        copiedField = "password"
-                        autoClearCopied()
+                VStack(spacing: 0) {
+                    if let threat = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
+                        let color: Color = threat.confidence == .high ? .red : .orange
+                        HStack(spacing: 6) {
+                            Text("Clipboard: **\(threat.detectedHost)**")
+                            Spacer()
+                            Button("Dismiss") {
+                                withAnimation { phishingMonitor.clearThreat() }
+                            }
+                            .buttonStyle(.plain)
+                            .underline()
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(color)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(color.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 8)
                     }
-                    actionButton("Copy Username", icon: "person.fill") {
-                        ClipboardService.copy(item.username)
-                        copiedField = "username"
-                        autoClearCopied()
-                    }
-                    if !item.url.isEmpty {
-                        actionButton("Open URL", icon: "safari") {
-                            if let url = URL(string: item.url.hasPrefix("http") ? item.url : "https://\(item.url)") {
-                                NSWorkspace.shared.open(url)
+
+                    HStack(spacing: 8) {
+                        actionButton("Copy Password", icon: "key.fill") {
+                            ClipboardService.copy(item.password)
+                            copiedField = "password"
+                            autoClearCopied()
+                        }
+                        actionButton("Copy Username", icon: "person.fill") {
+                            ClipboardService.copy(item.username)
+                            copiedField = "username"
+                            autoClearCopied()
+                        }
+                        if !item.url.isEmpty {
+                            actionButton("Open URL", icon: "safari") {
+                                if let url = URL(string: item.url.hasPrefix("http") ? item.url : "https://\(item.url)") {
+                                    NSWorkspace.shared.open(url)
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 12).padding(.bottom, 8)
                 }
-                .padding(.horizontal, 12).padding(.bottom, 8)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
