@@ -24,10 +24,25 @@ struct MenuBarQuickResultRow: View {
 
                 // Title + username
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(item.title)
-                        .font(.callout).fontWeight(.medium).lineLimit(1)
-                    Text(item.username.isEmpty ? item.url : item.username)
-                        .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    HStack(spacing: 4) {
+                        Text(item.title)
+                            .font(.callout).fontWeight(.medium).lineLimit(1)
+                        if let threat = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(threat.confidence == .high ? .red : .orange)
+                        }
+                    }
+                    
+                    if let threat = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
+                        Text(threat.reason?.title ?? "Suspicious link copied")
+                            .font(.caption).fontWeight(.medium)
+                            .foregroundStyle(threat.confidence == .high ? .red : .orange)
+                            .lineLimit(1)
+                    } else {
+                        Text(item.username.isEmpty ? item.url : item.username)
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
                 }
 
                 Spacer()
@@ -50,19 +65,21 @@ struct MenuBarQuickResultRow: View {
             if isExpanded {
                 VStack(spacing: 0) {
                     if let threat = phishingMonitor.currentThreat, phishingMonitor.threatenedItemID == item.id {
-                        PhishingWarningBanner(
-                            result: threat,
-                            onOpenCorrectSite: {
-                                if let url = URL(string: item.url.hasPrefix("http") ? item.url : "https://\(item.url)") {
-                                    NSWorkspace.shared.open(url)
-                                }
-                            },
-                            onDismiss: {
-                                withAnimation {
-                                    phishingMonitor.clearThreat()
-                                }
+                        let color: Color = threat.confidence == .high ? .red : .orange
+                        HStack(spacing: 6) {
+                            Text("Clipboard: **\(threat.detectedHost)**")
+                            Spacer()
+                            Button("Dismiss") {
+                                withAnimation { phishingMonitor.clearThreat() }
                             }
-                        )
+                            .buttonStyle(.plain)
+                            .underline()
+                        }
+                        .font(.caption2)
+                        .foregroundStyle(color)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(color.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
                         .padding(.horizontal, 12)
                         .padding(.bottom, 8)
                     }
