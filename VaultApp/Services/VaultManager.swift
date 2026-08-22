@@ -117,6 +117,9 @@ final class VaultManager: ObservableObject {
                 self.symmetricKey = key
                 self.vault = emptyVault
                 self.authenticationState = .unlocked
+                
+                AuditLogService.shared.load(using: key)
+                AuditLogService.shared.log(.vaultCreated)
             } catch {
                 self.errorMessage = userFacingError(error)
             }
@@ -141,6 +144,9 @@ final class VaultManager: ObservableObject {
                 self.vault = result.vault
                 self.isDuressMode = false
                 self.authenticationState = .unlocked
+                
+                AuditLogService.shared.load(using: result.key)
+                AuditLogService.shared.log(.vaultUnlocked)
                 
                 Task {
                     await self.syncService?.downloadAndMerge()
@@ -167,6 +173,8 @@ final class VaultManager: ObservableObject {
             // Neither matched
             self.errorMessage = "Incorrect password. Try again, or restore from a backup if you think the vault is corrupted."
             self.isLoading = false
+            
+            AuditLogService.shared.log(.unlockFailed, detail: "Invalid master password")
         }
     }
 
@@ -186,6 +194,9 @@ final class VaultManager: ObservableObject {
     // Clears the key and vault from memory. The encrypted file on disk is untouched.
     // NEVER invokes biometric authentication - locking must be immediate and silent.
     func lock() {
+        AuditLogService.shared.log(.vaultLocked)
+        AuditLogService.shared.unload()
+        
         symmetricKey = nil
         vault = Vault()
         authenticationState = .locked
@@ -231,6 +242,7 @@ final class VaultManager: ObservableObject {
 
     func addItem(_ item: VaultItem) {
         vault.add(item)
+        AuditLogService.shared.log(.itemAdded, itemTitle: item.title)
         do {
             try saveVault()
         } catch {
@@ -240,6 +252,7 @@ final class VaultManager: ObservableObject {
 
     func updateItem(_ item: VaultItem) {
         vault.update(item)
+        AuditLogService.shared.log(.itemEdited, itemTitle: item.title)
         do {
             try saveVault()
         } catch {
@@ -250,6 +263,7 @@ final class VaultManager: ObservableObject {
     func deleteItem(id: UUID) {
         // Clean up attachment files before deleting the item
         if let item = vault.item(withId: id) {
+            AuditLogService.shared.log(.itemDeleted, itemTitle: item.title)
             for attachment in item.attachments {
                 AttachmentService.delete(attachment: attachment)
             }
@@ -356,6 +370,9 @@ final class VaultManager: ObservableObject {
                 self.vault = decryptedVault
                 self.authenticationState = .unlocked
                 print("[UNLOCK_BIOMETRIC] authenticationState -> unlocked")
+                
+                AuditLogService.shared.load(using: key)
+                AuditLogService.shared.log(.biometricUnlock)
 
                 // Pull any newer vault synced from another Mac
                 Task {
@@ -438,6 +455,9 @@ final class VaultManager: ObservableObject {
             self.vault = decryptedVault
             self.authenticationState = .unlocked
             print("[AUTH] SUCCESS: authenticationState -> unlocked")
+            
+            AuditLogService.shared.load(using: key)
+            AuditLogService.shared.log(.biometricUnlock)
 
             // Pull any newer vault synced from another Mac
             Task {
@@ -474,16 +494,19 @@ final class VaultManager: ObservableObject {
         guard let salt = loadSaltForExport() else {
             throw ExportService.ExportError.noKeyAvailable
         }
+        AuditLogService.shared.log(.vaultExported, detail: "Format: encrypted backup")
         return try ExportService.exportEncryptedBackup(vault: vault, key: key, saltData: salt)
     }
 
     func exportCSV() throws -> Data {
         guard isUnlocked else { throw ExportService.ExportError.vaultLocked }
+        AuditLogService.shared.log(.vaultExported, detail: "Format: CSV")
         return try ExportService.exportCSV(vault: vault)
     }
 
     func exportJSON() throws -> Data {
         guard isUnlocked else { throw ExportService.ExportError.vaultLocked }
+        AuditLogService.shared.log(.vaultExported, detail: "Format: JSON")
         return try ExportService.exportJSON(vault: vault)
     }
 

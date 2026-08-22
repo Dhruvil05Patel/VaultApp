@@ -166,6 +166,9 @@ struct ItemDetailView: View {
         .onReceive(NotificationCenter.default.publisher(for: .screenCaptureStarted)) { _ in
             withAnimation { hideForCapture = true }
         }
+        .onAppear {
+            AuditLogService.shared.log(.itemViewed, itemTitle: item.title)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .screenCaptureStopped)) { _ in
             withAnimation { hideForCapture = false }
         }
@@ -182,11 +185,11 @@ struct ItemDetailView: View {
             Text("This action cannot be undone.")
         }
         .background {
-            Button("") { copyToClipboard(item.password, key: "password") }
+            Button("") { copyToClipboard(item.password, key: "password", label: "Password") }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .opacity(0)
             
-            Button("") { copyToClipboard(item.username, key: "username") }
+            Button("") { copyToClipboard(item.username, key: "username", label: "Username") }
                 .keyboardShortcut("u", modifiers: [.command, .shift])
                 .opacity(0)
         }
@@ -286,7 +289,7 @@ struct ItemDetailView: View {
                 Spacer()
 
                 if !value.isEmpty {
-                    copyButton(value: value, key: copyKey)
+                    copyButton(value: value, key: copyKey, label: label)
                 }
             }
             .padding(.horizontal, 12)
@@ -340,7 +343,7 @@ struct ItemDetailView: View {
                 .help(showPassword ? "Hide password" : "Show password")
                 .accessibilityLabel(showPassword ? "Hide password" : "Show password")
 
-                copyButton(value: item.password, key: "password")
+                copyButton(value: item.password, key: "password", label: "Password")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
@@ -454,9 +457,9 @@ struct ItemDetailView: View {
     // MARK: - Copy Button
 
     @ViewBuilder
-    private func copyButton(value: String, key: String) -> some View {
+    private func copyButton(value: String, key: String, label: String? = nil) -> some View {
         Button {
-            copyToClipboard(value, key: key)
+            copyToClipboard(value, key: key, label: label)
         } label: {
             Image(systemName: copiedField == key ? "checkmark" : "doc.on.doc")
                 .foregroundStyle(copiedField == key ? .green : .secondary)
@@ -469,8 +472,9 @@ struct ItemDetailView: View {
 
     // MARK: - Helpers
 
-    private func copyToClipboard(_ value: String, key: String) {
+    private func copyToClipboard(_ value: String, key: String, label: String? = nil) {
         ClipboardService.copy(value)
+        AuditLogService.shared.log(.fieldCopied, itemTitle: item.title, fieldLabel: label ?? key.capitalized)
         withAnimation { copiedField = key }
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             withAnimation { copiedField = nil }
