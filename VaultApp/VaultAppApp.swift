@@ -22,6 +22,12 @@ struct VaultAppApp: App {
                 .environmentObject(VaultManager.shared)
                 .frame(minWidth: 720, minHeight: 520)
                 .onAppear {
+                    // Apply window screenshot protection
+                    if let window = NSApp.windows.first {
+                        window.enableScreenshotProtection()
+                    }
+                    ScreenProtectionService.shared.start()
+
                     autoLockService.start()
                     VaultManager.shared.syncService = SyncService.shared
                     if AppSettings.shared.iCloudSyncEnabled {

@@ -65,6 +65,14 @@ final class AppSettings: ObservableObject {
         didSet { UserDefaults.standard.set(aliasEmailDomain, forKey: "aliasEmailDomain") }
     }
 
+    @Published var screenCaptureProtection: Bool {
+        didSet { UserDefaults.standard.set(screenCaptureProtection, forKey: "screenCaptureProtection") }
+    }
+
+    @Published var lockOnScreenShare: Bool {
+        didSet { UserDefaults.standard.set(lockOnScreenShare, forKey: "lockOnScreenShare") }
+    }
+
     private init() {
         // Load persisted values, falling back to sensible defaults
         self.autoLockTimeout      = UserDefaults.standard.object(forKey: "autoLockTimeout") as? Int ?? 300  // 5 min
@@ -80,5 +88,7 @@ final class AppSettings: ObservableObject {
         self.p2pSyncEnabled       = UserDefaults.standard.bool(forKey: "p2pSyncEnabled")
         self.p2pDeviceName        = UserDefaults.standard.string(forKey: "p2pDeviceName") ?? ""
         self.aliasEmailDomain     = UserDefaults.standard.string(forKey: "aliasEmailDomain") ?? ""
+        self.screenCaptureProtection = UserDefaults.standard.object(forKey: "screenCaptureProtection") as? Bool ?? true
+        self.lockOnScreenShare    = UserDefaults.standard.bool(forKey: "lockOnScreenShare")
     }
 }
