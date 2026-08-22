@@ -85,7 +85,7 @@ struct AddItemView: View {
             // Bottom action buttons
             sheetFooter
         }
-        .frame(minWidth: 440, minHeight: 520)
+        .frame(minWidth: 440, maxWidth: 640, minHeight: 520, maxHeight: 800)
         .onAppear {
             prefillIfEditing()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -128,7 +128,7 @@ struct AddItemView: View {
                     Label(cat.rawValue, systemImage: cat.icon).tag(cat)
                 }
             }
-            .pickerStyle(.segmented)
+            .pickerStyle(.menu)
         }
     }
 
