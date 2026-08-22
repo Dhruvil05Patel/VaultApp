@@ -12,6 +12,7 @@ struct ItemDetailView: View {
     @State private var isCheckingBreach: Bool = false
     @State private var breachError: String? = nil
     @State private var showPasswordChange: Bool = false
+    @State private var showShareFields: Bool = false
 
     // MARK: - Body
 
@@ -104,16 +105,27 @@ struct ItemDetailView: View {
         .navigationTitle(item.title)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Edit") {
-                    showEditSheet = true
+                HStack {
+                    Button {
+                        showShareFields = true
+                    } label: {
+                        Label("Share Fields…", systemImage: "square.and.arrow.up")
+                    }
+                    
+                    Button("Edit") {
+                        showEditSheet = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut("e", modifiers: .command)
                 }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut("e", modifiers: .command)
             }
         }
         .sheet(isPresented: $showEditSheet) {
             AddItemView(existingItem: item)   // Task 09 — edit mode
                 .environmentObject(vaultManager)
+        }
+        .sheet(isPresented: $showShareFields) {
+            ShareFieldsView(item: item)
         }
         .sheet(isPresented: $showPasswordChange) {
             PasswordChangeBrowserView(item: item)
